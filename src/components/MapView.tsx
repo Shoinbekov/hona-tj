@@ -2,9 +2,11 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import type { Map as LeafletMap } from 'leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
+import type { Map as LeafletMap, MarkerCluster } from 'leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MOCK_PROPERTIES, formatPrice, getPriceInCurrency } from '@/lib/data';
 import LocationPicker from '@/components/LocationPicker';
@@ -27,6 +29,26 @@ const makePin = (color: string) => L.divIcon({
 });
 
 const ICONS = { sale: makePin(BLUE), rent: makePin(GREEN) };
+
+// Cluster bubble: blue circle with a white count, sized by how many listings it groups —
+// small (<10), medium (<50), large (50+), matching the krisha.kz-style map clustering.
+function createClusterIcon(cluster: MarkerCluster) {
+  const count = cluster.getChildCount();
+  const size = count < 10 ? 36 : count < 50 ? 44 : 54;
+  const fontSize = count < 10 ? 13 : count < 50 ? 14 : 16;
+
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width: ${size}px; height: ${size}px; border-radius: 50%;
+      background: ${BLUE}; border: 3px solid rgba(26,86,219,0.3);
+      color: #fff; font-weight: 700; font-size: ${fontSize}px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-family: system-ui, sans-serif;
+    ">${count}</div>`,
+    iconSize: L.point(size, size, true),
+  });
+}
 
 // Dushanbe, city-level view — default map position
 const DUSHANBE_CENTER: [number, number] = [38.5598, 68.7733];
@@ -198,47 +220,54 @@ export default function MapView() {
 
           <FlyToFilter city={filters.city} district={filters.district} />
 
-          {visible.map(p => (
-            <Marker
-              key={p.id}
-              position={[p.lat!, p.lng!]}
-              icon={ICONS[p.listingType]}
-            >
-              <Popup maxWidth={230} minWidth={230}>
-                <div style={{ width: 230, fontFamily: 'system-ui, sans-serif' }}>
-                  {p.images[0] && (
-                    <img
-                      src={p.images[0]}
-                      alt={p.title.ru}
-                      style={{ width: '100%', height: 130, objectFit: 'cover', display: 'block' }}
-                    />
-                  )}
-                  <div style={{ padding: '10px 12px 12px' }}>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: BLUE }}>
-                      {formatPrice(getPriceInCurrency(p, currency, rates), currency)}
-                    </div>
-                    <div style={{ fontSize: 13, color: '#111827', marginTop: 4, lineHeight: 1.35 }}>
-                      {p.title.ru}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>
-                      {p.district} · {p.area} м²
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-                      <a href={`/property/${p.id}`}
-                        style={{ flex: 1, background: BLUE, color: '#fff', borderRadius: 5, padding: '7px 0', fontSize: 12, fontWeight: 600, textAlign: 'center', textDecoration: 'none', display: 'block' }}>
-                        Подробнее
-                      </a>
-                      <a href={`https://wa.me/${p.whatsapp.replace(/\D/g, '')}`}
-                        target="_blank" rel="noopener noreferrer"
-                        style={{ flex: 1, background: '#25d366', color: '#fff', borderRadius: 5, padding: '7px 0', fontSize: 12, fontWeight: 600, textAlign: 'center', textDecoration: 'none', display: 'block' }}>
-                        WhatsApp
-                      </a>
+          <MarkerClusterGroup
+            iconCreateFunction={createClusterIcon}
+            showCoverageOnHover={false}
+            spiderfyOnMaxZoom
+            zoomToBoundsOnClick
+          >
+            {visible.map(p => (
+              <Marker
+                key={p.id}
+                position={[p.lat!, p.lng!]}
+                icon={ICONS[p.listingType]}
+              >
+                <Popup maxWidth={230} minWidth={230}>
+                  <div style={{ width: 230, fontFamily: 'system-ui, sans-serif' }}>
+                    {p.images[0] && (
+                      <img
+                        src={p.images[0]}
+                        alt={p.title.ru}
+                        style={{ width: '100%', height: 130, objectFit: 'cover', display: 'block' }}
+                      />
+                    )}
+                    <div style={{ padding: '10px 12px 12px' }}>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: BLUE }}>
+                        {formatPrice(getPriceInCurrency(p, currency, rates), currency)}
+                      </div>
+                      <div style={{ fontSize: 13, color: '#111827', marginTop: 4, lineHeight: 1.35 }}>
+                        {p.title.ru}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>
+                        {p.district} · {p.area} м²
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                        <a href={`/property/${p.id}`}
+                          style={{ flex: 1, background: BLUE, color: '#fff', borderRadius: 5, padding: '7px 0', fontSize: 12, fontWeight: 600, textAlign: 'center', textDecoration: 'none', display: 'block' }}>
+                          Подробнее
+                        </a>
+                        <a href={`https://wa.me/${p.whatsapp.replace(/\D/g, '')}`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ flex: 1, background: '#25d366', color: '#fff', borderRadius: 5, padding: '7px 0', fontSize: 12, fontWeight: 600, textAlign: 'center', textDecoration: 'none', display: 'block' }}>
+                          WhatsApp
+                        </a>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+                </Popup>
+              </Marker>
+            ))}
+          </MarkerClusterGroup>
         </MapContainer>
       </div>
 

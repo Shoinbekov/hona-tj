@@ -6,7 +6,21 @@
       "PowerShell(New-Item *)",
       "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")",
       "Bash(npx tsc *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/react-leaflet-cluster/package.json'\\).version, require\\('./node_modules/react-leaflet-cluster/package.json'\\).peerDependencies\\)\")",
+      "Bash(ls \"C:/Projects/hona-tj/node_modules/react-leaflet-cluster/dist\")",
+      "Bash(ls \"C:/Projects/hona-tj/node_modules/leaflet.markercluster/dist\")",
+      "Skill(run)",
+      "Bash(command -v chromium-cli)",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).devDependencies\\)\")",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(where chromium-cli *)",
+      "Bash(where npx *)",
+      "Bash(npx playwright *)",
+      "Bash(cp \"C:/Users/SHOINB~1/AppData/Local/Temp/claude/C--Projects-hona-tj/17647ead-26aa-4f88-9d71-628548459e35/scratchpad/verify-cluster.js\" \"C:/Projects/hona-tj/verify-cluster.js\")",
+      "Bash(node verify-cluster.js)",
+      "Bash(npm uninstall *)"
     ]
   }
 }
