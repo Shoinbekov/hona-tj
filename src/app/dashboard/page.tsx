@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { DASHBOARD_LISTINGS, formatPrice } from '@/lib/data';
 import { Eye, MessageCircle, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, BarChart3, Bell, Settings, LogOut, Home, Star, TrendingUp } from 'lucide-react';
 
@@ -15,7 +17,15 @@ type Tab = 'listings' | 'stats' | 'notifications' | 'settings';
 
 export default function DashboardPage() {
   const { currency } = useLanguage();
+  const { user, signOut, loading } = useAuth();
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>('listings');
+
+  useEffect(() => {
+    if (!loading && !user) router.replace('/login');
+  }, [user, loading, router]);
+
+  if (loading || !user) return null;
   const [items, setItems] = useState(DASHBOARD_LISTINGS.map(l => ({ ...l, active: true })));
 
   const toggle = (id: string) => setItems(p => p.map(l => l.id === id ? { ...l, active: !l.active } : l));
@@ -48,13 +58,18 @@ export default function DashboardPage() {
           {/* Sidebar */}
           <aside style={{ width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }} className="dash-sidebar">
             <div style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: 20, textAlign: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: BLUE, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, margin: '0 auto 10px' }}>А</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>Алишер Каримов</div>
-              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>info@hona.tj</div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 2, marginTop: 6 }}>
-                {[1,2,3,4,5].map(s => <Star key={s} size={12} color="#f59e0b" fill={s<=4?'#f59e0b':'none'} />)}
-                <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>4.8</span>
-              </div>
+              {(() => {
+                const name  = user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'Пользователь';
+                const email = user.email ?? '';
+                const init  = name[0]?.toUpperCase() ?? 'П';
+                return (
+                  <>
+                    <div style={{ width: 56, height: 56, borderRadius: '50%', background: BLUE, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, margin: '0 auto 10px' }}>{init}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>{name}</div>
+                    <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{email}</div>
+                  </>
+                );
+              })()}
             </div>
 
             <nav style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '6px 0' }}>
@@ -66,9 +81,10 @@ export default function DashboardPage() {
                 </button>
               ))}
               <div style={{ height: 1, background: '#f3f4f6', margin: '4px 0' }} />
-              <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', color: '#6b7280', fontSize: 14, textDecoration: 'none' }}>
+              <button onClick={async () => { await signOut(); router.push('/'); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', color: '#dc2626', fontSize: 14, background: 'none', border: 'none', width: '100%', cursor: 'pointer', textAlign: 'left' }}>
                 <LogOut size={16} /> Выйти
-              </Link>
+              </button>
             </nav>
           </aside>
 
