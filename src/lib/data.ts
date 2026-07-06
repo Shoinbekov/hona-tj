@@ -1,6 +1,6 @@
 import { Property } from '@/types';
 
-export const DISTRICTS = ['Сино', 'Фирдавси', 'Исмоили Сомони', 'Шохмансур'];
+export const DISTRICTS = ['Сино', 'Фирдавси', 'Исмоили Сомони', 'Шохмансур', 'Хомадони'];
 export const USD_TO_TJS = 10.9;
 
 export function formatPrice(amount: number, currency: 'USD' | 'TJS'): string {

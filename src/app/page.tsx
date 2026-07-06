@@ -15,7 +15,13 @@ const BLUE = '#1a56db';
 
 const EMPTY: SearchFilters = {
   query: '', listingType: 'all', propertyType: 'all',
-  district: '', minPrice: '', maxPrice: '', rooms: '', currency: 'USD',
+  district: '', rooms: '', rentPeriod: 'monthly',
+  minPrice: '', maxPrice: '', currency: 'USD',
+  hasPhoto: false, fromOwner: false, newBuilding: false,
+  furnished: false, pets: false, children: false,
+  floorFrom: '', floorTo: '', notFirstFloor: false, notLastFloor: false,
+  areaFrom: '', areaTo: '', landAreaFrom: '', landAreaTo: '',
+  landType: '', utilities: [], commercialTypes: [],
 };
 
 export default function HomePage() {
@@ -29,10 +35,27 @@ export default function HomePage() {
       if (filters.listingType !== 'all' && p.listingType !== filters.listingType) return false;
       if (filters.propertyType !== 'all' && p.type !== filters.propertyType) return false;
       if (filters.district && p.district !== filters.district) return false;
-      if (filters.rooms && p.rooms < +filters.rooms) return false;
+      if (filters.rooms) {
+        const r = filters.rooms;
+        if (r === '5+') { if (p.rooms < 5) return false; }
+        else if (r.includes('-')) {
+          const [lo, hi] = r.split('-').map(Number);
+          if (p.rooms < lo || p.rooms > hi) return false;
+        } else {
+          if (p.rooms !== +r) return false;
+        }
+      }
       const price = currency === 'USD' ? p.priceUSD : p.priceTJS;
       if (filters.minPrice && price < +filters.minPrice) return false;
       if (filters.maxPrice && price > +filters.maxPrice) return false;
+      if (filters.hasPhoto && p.images.length === 0) return false;
+      if (filters.furnished && !p.features.some(f => f.includes('Мебел') || f.includes('мебел'))) return false;
+      if (filters.notFirstFloor && p.floor === 1) return false;
+      if (filters.notLastFloor && p.floor !== undefined && p.totalFloors !== undefined && p.floor === p.totalFloors) return false;
+      if (filters.floorFrom && p.floor !== undefined && p.floor < +filters.floorFrom) return false;
+      if (filters.floorTo   && p.floor !== undefined && p.floor > +filters.floorTo)   return false;
+      if (filters.areaFrom  && p.area < +filters.areaFrom) return false;
+      if (filters.areaTo    && p.area > +filters.areaTo)   return false;
       return true;
     });
   }, [filters, currency]);

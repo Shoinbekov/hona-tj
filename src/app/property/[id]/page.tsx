@@ -41,7 +41,7 @@ export default function PropertyPage({ params }: { params: Promise<{ id: string 
     window.open(`https://wa.me/${p.whatsapp.replace(/\D/g, '')}?text=${msg}`, '_blank');
   };
 
-  const typeLabel = { apartment: 'Квартира', house: 'Дом', commercial: 'Коммерческая', land: 'Земля' }[p.type] ?? p.type;
+  const typeLabel = ({ apartment: 'Квартира', house: 'Дом', commercial: 'Коммерческая', land: 'Земля', garage: 'Гараж', room: 'Комната' } as Record<string, string>)[p.type] ?? p.type;
 
   const specs = [
     { label: 'Тип объекта',   val: typeLabel },

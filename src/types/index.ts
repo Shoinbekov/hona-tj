@@ -1,7 +1,7 @@
 export type Locale = 'tj' | 'ru' | 'en';
 export type Currency = 'USD' | 'TJS';
 export type ListingType = 'sale' | 'rent';
-export type PropertyType = 'apartment' | 'house' | 'commercial' | 'land';
+export type PropertyType = 'apartment' | 'house' | 'commercial' | 'land' | 'garage' | 'room' | 'business' | 'industrial';
 
 export interface Property {
   id: string;
@@ -35,10 +35,28 @@ export interface SearchFilters {
   listingType: ListingType | 'all';
   propertyType: PropertyType | 'all';
   district: string;
+  rooms: string;
+  rentPeriod: 'monthly' | 'daily';
   minPrice: string;
   maxPrice: string;
-  rooms: string;
   currency: Currency;
+  hasPhoto: boolean;
+  fromOwner: boolean;
+  newBuilding: boolean;
+  furnished: boolean;
+  pets: boolean;
+  children: boolean;
+  floorFrom: string;
+  floorTo: string;
+  notFirstFloor: boolean;
+  notLastFloor: boolean;
+  areaFrom: string;
+  areaTo: string;
+  landAreaFrom: string;
+  landAreaTo: string;
+  landType: string;
+  utilities: string[];
+  commercialTypes: string[];
 }
 
 export interface DashboardStats {
