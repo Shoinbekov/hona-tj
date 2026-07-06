@@ -25,7 +25,7 @@ const EMPTY: SearchFilters = {
 };
 
 export default function HomePage() {
-  const { currency } = useLanguage();
+  const { currency, rates } = useLanguage();
   const [filters, setFilters] = useState<SearchFilters>(EMPTY);
   const [page, setPage] = useState(1);
 
@@ -46,7 +46,7 @@ export default function HomePage() {
           if (p.rooms !== +r) return false;
         }
       }
-      const price = getPriceInCurrency(p, currency);
+      const price = getPriceInCurrency(p, currency, rates);
       if (filters.minPrice && price < +filters.minPrice) return false;
       if (filters.maxPrice && price > +filters.maxPrice) return false;
       if (filters.hasPhoto && p.images.length === 0) return false;
@@ -59,7 +59,7 @@ export default function HomePage() {
       if (filters.areaTo    && p.area > +filters.areaTo)   return false;
       return true;
     });
-  }, [filters, currency]);
+  }, [filters, currency, rates]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);

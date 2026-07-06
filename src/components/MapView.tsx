@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import type { Map as LeafletMap } from 'leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -26,6 +27,46 @@ const makePin = (color: string) => L.divIcon({
 });
 
 const ICONS = { sale: makePin(BLUE), rent: makePin(GREEN) };
+
+// Dushanbe, city-level view — default map position
+const DUSHANBE_CENTER: [number, number] = [38.5598, 68.7733];
+const DUSHANBE_ZOOM = 12;
+const MIN_ZOOM = 6;
+const MAX_ZOOM = 18;
+
+// Whole-country view, used when the "Весь Таджикистан" filter is chosen
+const TJ_CENTER: [number, number] = [38.5598, 68.7733];
+const TJ_ZOOM = 7;
+
+// Dushanbe district centers — map zooms in to these when a district filter is selected
+const DISTRICT_VIEWS: Record<string, [number, number, number]> = {
+  'Сино':           [38.5598, 68.7733, 14],
+  'Фирдавси':       [38.5731, 68.7864, 14],
+  'Исмоили Сомони': [38.5900, 68.8100, 14],
+  'Шохмансур':      [38.5450, 68.7600, 14],
+};
+
+// Flies the map to the matching view whenever the location filter actually changes.
+// Compares against the previous value (rather than a "first render" flag) so that
+// React 18 Strict Mode's double-invoked effects in dev can't misfire this as a real change.
+function FlyToFilter({ city, district }: { city: string; district: string }) {
+  const map = useMap();
+  const prev = useRef({ city, district });
+
+  useEffect(() => {
+    if (prev.current.city === city && prev.current.district === district) return;
+    prev.current = { city, district };
+
+    if (district && DISTRICT_VIEWS[district]) {
+      const [lat, lng, zoom] = DISTRICT_VIEWS[district];
+      map.flyTo([lat, lng], zoom);
+    } else if (!city || city === 'tj') {
+      map.flyTo(TJ_CENTER, TJ_ZOOM);
+    }
+  }, [city, district, map]);
+
+  return null;
+}
 
 // All properties that have coordinates
 const WITH_COORDS = MOCK_PROPERTIES.filter(p => p.lat != null && p.lng != null);
@@ -63,9 +104,20 @@ interface Filters {
 }
 
 export default function MapView() {
-  const { currency } = useLanguage();
+  const { currency, rates } = useLanguage();
   const [filters, setFilters] = useState<Filters>({ listingType: 'sale', propertyType: 'apartment', city: 'tj', district: '' });
   const up = (patch: Partial<Filters>) => setFilters(f => ({ ...f, ...patch }));
+
+  const mapRef = useRef<LeafletMap | null>(null);
+  const didSetInitialView = useRef(false);
+
+  // Pin the map to the Dushanbe view once, after Leaflet has fully finished initializing —
+  // guards against Leaflet computing its size/view before the container has its final layout.
+  function handleMapReady() {
+    if (didSetInitialView.current) return;
+    didSetInitialView.current = true;
+    mapRef.current?.setView(DUSHANBE_CENTER, DUSHANBE_ZOOM);
+  }
 
   const subtypes = filters.listingType === 'rent' ? RENT_TYPES : SALE_TYPES;
 
@@ -129,8 +181,13 @@ export default function MapView() {
       {/* ── Map ─────────────────────────────────────── */}
       <div style={{ flex: 1, minHeight: 0 }}>
         <MapContainer
-          center={[38.5598, 68.7733]}
-          zoom={7}
+          ref={mapRef}
+          center={DUSHANBE_CENTER}
+          zoom={DUSHANBE_ZOOM}
+          minZoom={MIN_ZOOM}
+          maxZoom={MAX_ZOOM}
+          zoomControl
+          whenReady={handleMapReady}
           style={{ height: '100%', width: '100%' }}
           scrollWheelZoom
         >
@@ -138,6 +195,8 @@ export default function MapView() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
+
+          <FlyToFilter city={filters.city} district={filters.district} />
 
           {visible.map(p => (
             <Marker
@@ -156,7 +215,7 @@ export default function MapView() {
                   )}
                   <div style={{ padding: '10px 12px 12px' }}>
                     <div style={{ fontSize: 17, fontWeight: 700, color: BLUE }}>
-                      {formatPrice(getPriceInCurrency(p, currency), currency)}
+                      {formatPrice(getPriceInCurrency(p, currency, rates), currency)}
                     </div>
                     <div style={{ fontSize: 13, color: '#111827', marginTop: 4, lineHeight: 1.35 }}>
                       {p.title.ru}

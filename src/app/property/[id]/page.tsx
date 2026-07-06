@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { MOCK_PROPERTIES, formatPrice } from '@/lib/data';
+import { MOCK_PROPERTIES, formatPrice, getPriceInCurrency } from '@/lib/data';
 import {
   ArrowLeft, MapPin, BedDouble, Maximize2, Layers, Eye, Phone,
   MessageCircle, Heart, Share2, Check, ChevronLeft, ChevronRight, Calendar, Star,
@@ -16,7 +16,7 @@ const GREEN = '#16a34a';
 
 export default function PropertyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { currency } = useLanguage();
+  const { currency, rates } = useLanguage();
   const [imgIdx, setImgIdx] = useState(0);
   const [liked, setLiked] = useState(false);
 
@@ -32,7 +32,7 @@ export default function PropertyPage({ params }: { params: Promise<{ id: string 
     </div>
   );
 
-  const price  = currency === 'USD' ? formatPrice(p.priceUSD, 'USD') : formatPrice(p.priceTJS, 'TJS');
+  const price  = formatPrice(getPriceInCurrency(p, currency, rates), currency);
   const isRent = p.listingType === 'rent';
   const prev   = () => setImgIdx(i => (i - 1 + p.images.length) % p.images.length);
   const next   = () => setImgIdx(i => (i + 1) % p.images.length);

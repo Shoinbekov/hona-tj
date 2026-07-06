@@ -20,13 +20,13 @@ export default function DashboardPage() {
   const { user, signOut, loading } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('listings');
+  const [items, setItems] = useState(DASHBOARD_LISTINGS.map(l => ({ ...l, active: true })));
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
   }, [user, loading, router]);
 
   if (loading || !user) return null;
-  const [items, setItems] = useState(DASHBOARD_LISTINGS.map(l => ({ ...l, active: true })));
 
   const toggle = (id: string) => setItems(p => p.map(l => l.id === id ? { ...l, active: !l.active } : l));
   const remove = (id: string) => { if (confirm('Удалить объявление?')) setItems(p => p.filter(l => l.id !== id)); };

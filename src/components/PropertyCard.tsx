@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatPrice, getPriceInCurrency } from '@/lib/data';
 import { Property } from '@/types';
@@ -10,9 +10,10 @@ const BLUE  = '#1a56db';
 const GREEN = '#16a34a';
 
 export default function PropertyCard({ property: p }: { property: Property }) {
-  const { currency } = useLanguage();
+  const { currency, rates } = useLanguage();
+  const router = useRouter();
 
-  const price = formatPrice(getPriceInCurrency(p, currency), currency);
+  const price = formatPrice(getPriceInCurrency(p, currency, rates), currency);
   const isRent = p.listingType === 'rent';
 
   const openWA = (e: React.MouseEvent) => {
@@ -23,7 +24,7 @@ export default function PropertyCard({ property: p }: { property: Property }) {
 
   return (
     <article className="prop-card" style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <Link href={`/property/${p.id}`} style={{ textDecoration: 'none', display: 'block', position: 'relative' }}>
+      <div onClick={() => router.push(`/property/${p.id}`)} style={{ textDecoration: 'none', display: 'block', position: 'relative', cursor: 'pointer' }}>
         {/* Photo */}
         <div style={{ height: 220, overflow: 'hidden', background: '#e5e7eb', position: 'relative' }}>
           <img
@@ -115,7 +116,7 @@ export default function PropertyCard({ property: p }: { property: Property }) {
             </a>
           </div>
         </div>
-      </Link>
+      </div>
     </article>
   );
 }

@@ -4,7 +4,9 @@
       "Bash(python3 *)",
       "PowerShell(py *)",
       "PowerShell(New-Item *)",
-      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")"
+      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)"
     ]
   }
 }

@@ -1,14 +1,16 @@
 import { Currency, Property } from '@/types';
+import { ExchangeRates, FALLBACK_RATES } from './currency';
 
-export const DISTRICTS   = ['Сино', 'Фирдавси', 'Исмоили Сомони', 'Шохмансур', 'Хомадони'];
-export const USD_TO_TJS  = 10.9;
-export const USD_TO_RUB  = 90;
-export const TJS_TO_RUB  = 8.5;
+export const DISTRICTS = ['Сино', 'Фирдавси', 'Исмоили Сомони', 'Шохмансур', 'Хомадони'];
 
-export function getPriceInCurrency(p: { priceUSD: number; priceTJS: number }, currency: Currency): number {
+export function getPriceInCurrency(
+  p: { priceUSD: number; priceTJS: number },
+  currency: Currency,
+  rates: ExchangeRates = FALLBACK_RATES
+): number {
   if (currency === 'USD') return p.priceUSD;
-  if (currency === 'TJS') return p.priceTJS;
-  return Math.round(p.priceUSD * USD_TO_RUB);
+  if (currency === 'TJS') return Math.round(p.priceUSD * rates.USD_TO_TJS);
+  return Math.round(p.priceUSD * rates.USD_TO_RUB);
 }
 
 export function formatPrice(amount: number, currency: Currency): string {
