@@ -85,7 +85,7 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
     const keep = sub && subs.some(s => s.v === sub);
     up({
       listingType:  val as SearchFilters['listingType'],
-      propertyType: keep ? (sub as SearchFilters['propertyType']) : 'all',
+      propertyType: (keep ? sub : subs[0].v) as SearchFilters['propertyType'],
       rooms: '', rentPeriod: 'monthly',
       areaFrom: '', areaTo: '', landAreaFrom: '', landAreaTo: '',
     });
@@ -93,14 +93,14 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
 
   function onSubChange(val: string) {
     up({
-      propertyType: (val || 'all') as SearchFilters['propertyType'],
+      propertyType: val as SearchFilters['propertyType'],
       rooms: '', rentPeriod: 'monthly',
       areaFrom: '', areaTo: '', landAreaFrom: '', landAreaTo: '',
     });
   }
 
   const hasReset =
-    lt !== 'all' || sub !== '' || !!f.district || !!f.rooms ||
+    lt !== 'sale' || sub !== 'apartment' || !!f.district || !!f.rooms ||
     !!f.minPrice || !!f.maxPrice || !!f.areaFrom || !!f.areaTo ||
     !!f.landAreaFrom || !!f.landAreaTo || f.hasPhoto || f.fromOwner || f.newBuilding;
 
@@ -122,7 +122,6 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
             {/* Тип сделки */}
             <select value={lt} onChange={e => onDealChange(e.target.value)}
               style={{ ...CTRL, minWidth: 128, flex: '0 0 128px' }}>
-              <option value="all">Купить/Арендовать</option>
               <option value="sale">Купить</option>
               <option value="rent">Арендовать</option>
             </select>
@@ -130,7 +129,6 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
             {/* Тип объекта */}
             <select value={sub} onChange={e => onSubChange(e.target.value)}
               style={{ ...CTRL, minWidth: 200, flex: '0 0 200px' }}>
-              <option value="">Тип жилья</option>
               {subtypes.map(s => <option key={s.v} value={s.v}>{s.l}</option>)}
             </select>
 
@@ -205,7 +203,7 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
             {hasReset && (
               <button
                 onClick={() => up({
-                  listingType: 'all', propertyType: 'all', district: '', rooms: '',
+                  listingType: 'sale', propertyType: 'apartment', district: '', rooms: '',
                   minPrice: '', maxPrice: '', rentPeriod: 'monthly',
                   areaFrom: '', areaTo: '', landAreaFrom: '', landAreaTo: '',
                   hasPhoto: false, fromOwner: false, newBuilding: false,

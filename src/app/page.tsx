@@ -14,7 +14,7 @@ const PER_PAGE = 6;
 const BLUE = '#1a56db';
 
 const EMPTY: SearchFilters = {
-  query: '', listingType: 'all', propertyType: 'all',
+  query: '', listingType: 'sale', propertyType: 'apartment',
   district: '', rooms: '', rentPeriod: 'monthly',
   minPrice: '', maxPrice: '', currency: 'USD',
   hasPhoto: false, fromOwner: false, newBuilding: false,
