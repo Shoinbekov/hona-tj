@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { SearchFilters } from '@/types';
 import { DISTRICTS } from '@/lib/data';
 
@@ -195,9 +196,9 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
             </button>
 
             {/* На карте */}
-            <button style={{ background: '#fff', color: BLUE, border: `1px solid ${BLUE}`, borderRadius: 6, height: 40, padding: '0 14px', fontSize: 14, fontWeight: 500, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <Link href="/map" style={{ background: '#fff', color: BLUE, border: `1px solid ${BLUE}`, borderRadius: 6, height: 40, padding: '0 14px', fontSize: 14, fontWeight: 500, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
               На карте
-            </button>
+            </Link>
 
             {/* Сбросить */}
             {hasReset && (

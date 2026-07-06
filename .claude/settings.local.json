@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python3 *)",
-      "PowerShell(py *)"
+      "PowerShell(py *)",
+      "PowerShell(New-Item *)"
     ]
   }
 }

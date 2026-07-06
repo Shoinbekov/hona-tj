@@ -28,6 +28,7 @@ export const MOCK_PROPERTIES: Property[] = [
     phone: '+992900000001', whatsapp: '+992900000001',
     agentName: 'Алишер К.', views: 412, isTop: true, isNew: false,
     createdAt: '2024-11-01',
+    lat: 38.5598, lng: 68.7733,
   },
   {
     id: '2',
@@ -46,6 +47,7 @@ export const MOCK_PROPERTIES: Property[] = [
     phone: '+992900000002', whatsapp: '+992900000002',
     agentName: 'Нилуфар Р.', views: 289, isTop: false, isNew: true,
     createdAt: '2024-11-10',
+    lat: 38.5731, lng: 68.7864,
   },
   {
     id: '3',
@@ -64,6 +66,7 @@ export const MOCK_PROPERTIES: Property[] = [
     phone: '+992900000003', whatsapp: '+992900000003',
     agentName: 'Фирдавс М.', views: 534, isTop: true, isNew: false,
     createdAt: '2024-10-20',
+    lat: 38.5900, lng: 68.8100,
   },
   {
     id: '4',
@@ -82,6 +85,7 @@ export const MOCK_PROPERTIES: Property[] = [
     phone: '+992900000004', whatsapp: '+992900000004',
     agentName: 'Санавбар Т.', views: 671, isTop: true, isNew: false,
     createdAt: '2024-10-15',
+    lat: 38.5850, lng: 68.8050,
   },
   {
     id: '5',
@@ -100,6 +104,7 @@ export const MOCK_PROPERTIES: Property[] = [
     phone: '+992900000005', whatsapp: '+992900000005',
     agentName: 'Баходур Н.', views: 198, isTop: false, isNew: false,
     createdAt: '2024-11-05',
+    lat: 38.5450, lng: 68.7600,
   },
   {
     id: '6',
@@ -118,6 +123,7 @@ export const MOCK_PROPERTIES: Property[] = [
     phone: '+992900000006', whatsapp: '+992900000006',
     agentName: 'Гулнора С.', views: 320, isTop: false, isNew: true,
     createdAt: '2024-11-08',
+    lat: 38.5560, lng: 68.7800,
   },
   {
     id: '7',
@@ -135,6 +141,7 @@ export const MOCK_PROPERTIES: Property[] = [
     phone: '+992900000007', whatsapp: '+992900000007',
     agentName: 'Рустам А.', views: 147, isTop: false, isNew: false,
     createdAt: '2024-10-28',
+    lat: 38.5200, lng: 68.7400,
   },
   {
     id: '8',
@@ -153,6 +160,7 @@ export const MOCK_PROPERTIES: Property[] = [
     phone: '+992900000008', whatsapp: '+992900000008',
     agentName: 'Камола Б.', views: 263, isTop: false, isNew: true,
     createdAt: '2024-11-12',
+    lat: 38.5620, lng: 68.7690,
   },
 ];
 

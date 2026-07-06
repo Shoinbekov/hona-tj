@@ -28,6 +28,8 @@ export interface Property {
   isFeatured?: boolean;
   isTop?: boolean;
   isNew?: boolean;
+  lat?: number;
+  lng?: number;
 }
 
 export interface SearchFilters {
