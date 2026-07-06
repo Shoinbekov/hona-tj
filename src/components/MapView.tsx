@@ -35,29 +35,47 @@ const CTRL: React.CSSProperties = {
   padding: '0 10px', outline: 'none',
 };
 
-const MAP_TYPES = [
-  { v: 'all',        l: 'Тип жилья' },
-  { v: 'apartment',  l: 'Квартира' },
-  { v: 'house',      l: 'Дом' },
-  { v: 'commercial', l: 'Коммерческая' },
-  { v: 'land',       l: 'Участок' },
-  { v: 'garage',     l: 'Гараж' },
+const SALE_TYPES = [
+  { v: 'apartment',  l: 'квартиру' },
+  { v: 'house',      l: 'дом или дачу' },
+  { v: 'garage',     l: 'гараж или паркинг' },
+  { v: 'land',       l: 'участок' },
+  { v: 'commercial', l: 'коммерческую недвижимость' },
+  { v: 'business',   l: 'бизнес' },
+  { v: 'industrial', l: 'промбазы и склады' },
+];
+
+const RENT_TYPES = [
+  { v: 'apartment',  l: 'квартиру' },
+  { v: 'room',       l: 'комнату' },
+  { v: 'house',      l: 'дом или дачу' },
+  { v: 'garage',     l: 'гараж или паркинг' },
+  { v: 'commercial', l: 'коммерческую недвижимость' },
+  { v: 'industrial', l: 'промбазы и склады' },
 ];
 
 interface Filters {
-  listingType: 'all' | 'sale' | 'rent';
+  listingType: 'sale' | 'rent';
   propertyType: string;
   district: string;
 }
 
 export default function MapView() {
   const { currency } = useLanguage();
-  const [filters, setFilters] = useState<Filters>({ listingType: 'all', propertyType: 'all', district: '' });
+  const [filters, setFilters] = useState<Filters>({ listingType: 'sale', propertyType: 'apartment', district: '' });
   const up = (patch: Partial<Filters>) => setFilters(f => ({ ...f, ...patch }));
 
+  const subtypes = filters.listingType === 'rent' ? RENT_TYPES : SALE_TYPES;
+
+  function onDealChange(val: 'sale' | 'rent') {
+    const subs = val === 'rent' ? RENT_TYPES : SALE_TYPES;
+    const keep = subs.some(s => s.v === filters.propertyType);
+    up({ listingType: val, propertyType: keep ? filters.propertyType : subs[0].v });
+  }
+
   const visible = useMemo(() => WITH_COORDS.filter(p => {
-    if (filters.listingType !== 'all' && p.listingType !== filters.listingType) return false;
-    if (filters.propertyType !== 'all' && p.type !== filters.propertyType) return false;
+    if (p.listingType !== filters.listingType) return false;
+    if (p.type !== filters.propertyType) return false;
     if (filters.district && p.district !== filters.district) return false;
     return true;
   }), [filters]);
@@ -70,17 +88,16 @@ export default function MapView() {
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
 
           <select value={filters.listingType}
-            onChange={e => up({ listingType: e.target.value as Filters['listingType'] })}
-            style={{ ...CTRL, minWidth: 148 }}>
-            <option value="all">Купить и арендовать</option>
+            onChange={e => onDealChange(e.target.value as 'sale' | 'rent')}
+            style={{ ...CTRL, minWidth: 128 }}>
             <option value="sale">Купить</option>
             <option value="rent">Арендовать</option>
           </select>
 
           <select value={filters.propertyType}
             onChange={e => up({ propertyType: e.target.value })}
-            style={{ ...CTRL, minWidth: 155 }}>
-            {MAP_TYPES.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
+            style={{ ...CTRL, minWidth: 200 }}>
+            {subtypes.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
           </select>
 
           <select value={filters.district}
