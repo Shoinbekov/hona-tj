@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { MOCK_PROPERTIES, formatPrice } from '@/lib/data';
+import { MOCK_PROPERTIES, formatPrice, getPriceInCurrency } from '@/lib/data';
 import LocationPicker from '@/components/LocationPicker';
 
 const BLUE   = '#1a56db';
@@ -156,7 +156,7 @@ export default function MapView() {
                   )}
                   <div style={{ padding: '10px 12px 12px' }}>
                     <div style={{ fontSize: 17, fontWeight: 700, color: BLUE }}>
-                      {formatPrice(currency === 'USD' ? p.priceUSD : p.priceTJS, currency)}
+                      {formatPrice(getPriceInCurrency(p, currency), currency)}
                     </div>
                     <div style={{ fontSize: 13, color: '#111827', marginTop: 4, lineHeight: 1.35 }}>
                       {p.title.ru}

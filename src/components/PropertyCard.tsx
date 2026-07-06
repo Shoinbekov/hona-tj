@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { formatPrice } from '@/lib/data';
+import { formatPrice, getPriceInCurrency } from '@/lib/data';
 import { Property } from '@/types';
 import { MapPin, BedDouble, Maximize2, Layers, Phone, MessageCircle } from 'lucide-react';
 
@@ -12,7 +12,7 @@ const GREEN = '#16a34a';
 export default function PropertyCard({ property: p }: { property: Property }) {
   const { currency } = useLanguage();
 
-  const price = currency === 'USD' ? formatPrice(p.priceUSD, 'USD') : formatPrice(p.priceTJS, 'TJS');
+  const price = formatPrice(getPriceInCurrency(p, currency), currency);
   const isRent = p.listingType === 'rent';
 
   const openWA = (e: React.MouseEvent) => {

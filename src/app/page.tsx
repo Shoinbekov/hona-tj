@@ -6,7 +6,7 @@ import SearchSection from '@/components/SearchFilters';
 import PropertyCard from '@/components/PropertyCard';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { MOCK_PROPERTIES } from '@/lib/data';
+import { MOCK_PROPERTIES, getPriceInCurrency } from '@/lib/data';
 import { SearchFilters } from '@/types';
 import { Home, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -46,7 +46,7 @@ export default function HomePage() {
           if (p.rooms !== +r) return false;
         }
       }
-      const price = currency === 'USD' ? p.priceUSD : p.priceTJS;
+      const price = getPriceInCurrency(p, currency);
       if (filters.minPrice && price < +filters.minPrice) return false;
       if (filters.maxPrice && price > +filters.maxPrice) return false;
       if (filters.hasPhoto && p.images.length === 0) return false;

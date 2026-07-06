@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { SearchFilters } from '@/types';
+import { Currency, SearchFilters } from '@/types';
 import LocationPicker from '@/components/LocationPicker';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const BLUE   = '#1a56db';
 const BORDER = '#d1d5db';
@@ -54,7 +55,17 @@ function needsPeriod(lt: string, sub: string) { return lt === 'rent' && (sub ===
 function needsAreaSqm(sub: string)  { return sub === 'commercial'; }
 function needsAreaSotok(sub: string) { return sub === 'land'; }
 
-function priceUnit(lt: string, sub: string, period: string): string {
+function priceUnit(lt: string, sub: string, period: string, currency: Currency): string {
+  if (currency === 'USD') {
+    if (lt === 'rent' && period === 'daily') return 'USD/сут.';
+    if (sub === 'room' || sub === 'industrial') return 'USD/мес.';
+    return 'USD';
+  }
+  if (currency === 'RUB') {
+    if (lt === 'rent' && period === 'daily') return 'руб./сут.';
+    if (sub === 'room' || sub === 'industrial') return 'руб./мес.';
+    return 'руб.';
+  }
   if (lt === 'rent' && period === 'daily') return 'сом/сут.';
   if (sub === 'room' || sub === 'industrial') return 'сом/мес.';
   return 'сом.';
@@ -69,6 +80,7 @@ interface Props {
 }
 
 export default function SmartFilter({ filters: f, onChange, resultCount }: Props) {
+  const { currency } = useLanguage();
   const up = (patch: Partial<SearchFilters>) => onChange({ ...f, ...patch });
 
   const lt  = f.listingType;
@@ -79,7 +91,7 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
   const showRooms  = needsRooms(sub);
   const showSqm    = needsAreaSqm(sub);
   const showSotok  = needsAreaSotok(sub);
-  const unit       = priceUnit(lt, sub, f.rentPeriod);
+  const unit       = priceUnit(lt, sub, f.rentPeriod, currency);
 
   function onDealChange(val: string) {
     const subs = val === 'rent' ? RENT_TYPES : SALE_TYPES;
@@ -182,12 +194,18 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
             )}
 
             {/* Цена */}
-            <input type="number" placeholder="От" value={f.minPrice}
-              onChange={e => up({ minPrice: e.target.value })}
+            <input type="number" placeholder="От" value={f.minPrice} min="0"
+              onChange={e => {
+                const n = parseFloat(e.target.value);
+                up({ minPrice: !isNaN(n) && n < 0 ? '0' : e.target.value });
+              }}
               style={{ ...CTRL, minWidth: 88, flex: '1 1 88px' }} />
             <span style={{ fontSize: 14, color: '#9ca3af', flexShrink: 0 }}>—</span>
-            <input type="number" placeholder="До" value={f.maxPrice}
-              onChange={e => up({ maxPrice: e.target.value })}
+            <input type="number" placeholder="До" value={f.maxPrice} min="0"
+              onChange={e => {
+                const n = parseFloat(e.target.value);
+                up({ maxPrice: !isNaN(n) && n < 0 ? '0' : e.target.value });
+              }}
               style={{ ...CTRL, minWidth: 88, flex: '1 1 88px' }} />
             <span style={{ fontSize: 13, color: '#6b7280', whiteSpace: 'nowrap', flexShrink: 0 }}>{unit}</span>
 

@@ -1,5 +1,5 @@
 export type Locale = 'tj' | 'ru' | 'en';
-export type Currency = 'USD' | 'TJS';
+export type Currency = 'USD' | 'TJS' | 'RUB';
 export type ListingType = 'sale' | 'rent';
 export type PropertyType = 'apartment' | 'house' | 'commercial' | 'land' | 'garage' | 'room' | 'business' | 'industrial';
 

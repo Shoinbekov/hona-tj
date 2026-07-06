@@ -39,15 +39,16 @@ export default function Navbar() {
         {/* Right */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 'auto' }} className="hidden md:flex">
 
-          {/* USD / TJS */}
+          {/* USD / TJS / RUB */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 0, color: '#fff', fontSize: 14 }}>
-            <button onClick={() => setCurrency('USD')} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: currency === 'USD' ? 700 : 400, opacity: currency === 'USD' ? 1 : 0.55, padding: '2px 5px' }}>
-              USD
-            </button>
-            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>|</span>
-            <button onClick={() => setCurrency('TJS')} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: currency === 'TJS' ? 700 : 400, opacity: currency === 'TJS' ? 1 : 0.55, padding: '2px 5px' }}>
-              TJS
-            </button>
+            {(['USD', 'TJS', 'RUB'] as const).map((c, i, arr) => (
+              <span key={c} style={{ display: 'flex', alignItems: 'center' }}>
+                {i > 0 && <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>|</span>}
+                <button onClick={() => setCurrency(c)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: currency === c ? 700 : 400, opacity: currency === c ? 1 : 0.55, padding: '2px 5px' }}>
+                  {c}
+                </button>
+              </span>
+            ))}
           </div>
 
           <span style={{ color: '#fff', fontSize: 14, opacity: 0.8 }}>RU</span>
@@ -81,9 +82,12 @@ export default function Navbar() {
           ))}
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#fff', fontSize: 14, marginRight: 8 }}>
-              <button onClick={() => { setCurrency('USD'); }} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: currency === 'USD' ? 700 : 400 }}>USD</button>
-              <span style={{ opacity: 0.4 }}>|</span>
-              <button onClick={() => { setCurrency('TJS'); }} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: currency === 'TJS' ? 700 : 400 }}>TJS</button>
+              {(['USD', 'TJS', 'RUB'] as const).map((c, i) => (
+                <span key={c} style={{ display: 'flex', alignItems: 'center' }}>
+                  {i > 0 && <span style={{ opacity: 0.4 }}>|</span>}
+                  <button onClick={() => setCurrency(c)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: currency === c ? 700 : 400, opacity: currency === c ? 1 : 0.6, padding: '0 3px' }}>{c}</button>
+                </span>
+              ))}
             </div>
             <Link href="/add-listing" onClick={() => setOpen(false)}
               style={{ flex: 1, background: GREEN, color: '#fff', borderRadius: 6, padding: '9px 0', fontSize: 14, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
