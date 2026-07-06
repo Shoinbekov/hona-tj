@@ -36,6 +36,10 @@ export default function Navbar() {
     router.push('/');
   }
 
+  function goToAddListing() {
+    router.push(user ? '/add-listing' : '/login');
+  }
+
   const displayName = user?.user_metadata?.name ?? user?.email?.split('@')[0] ?? 'Профиль';
   const initial = displayName[0]?.toUpperCase() ?? 'П';
 
@@ -123,10 +127,10 @@ export default function Navbar() {
             </Link>
           )}
 
-          <Link href="/add-listing"
-            style={{ background: GREEN, color: '#fff', borderRadius: 6, padding: '0 16px', height: 34, fontSize: 14, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+          <button onClick={goToAddListing}
+            style={{ background: GREEN, color: '#fff', border: 'none', borderRadius: 6, padding: '0 16px', height: 34, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
             + Подать объявление
-          </Link>
+          </button>
         </div>
 
         {/* Mobile burger */}
@@ -172,10 +176,10 @@ export default function Navbar() {
                 </span>
               ))}
             </div>
-            <Link href="/add-listing" onClick={() => setOpen(false)}
-              style={{ flex: 1, background: GREEN, color: '#fff', borderRadius: 6, padding: '9px 0', fontSize: 14, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={() => { setOpen(false); goToAddListing(); }}
+              style={{ flex: 1, background: GREEN, color: '#fff', border: 'none', borderRadius: 6, padding: '9px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               + Объявление
-            </Link>
+            </button>
           </div>
         </div>
       )}

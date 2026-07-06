@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Home, Building2, Briefcase, TreePine, Check, Phone, MessageCircle, MapPin, DollarSign, Camera } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Home, Building2, Briefcase, TreePine, Check, Phone, MessageCircle, MapPin, DollarSign, Camera, Lock } from 'lucide-react';
 
 const BLUE   = '#1a56db';
 const GREEN  = '#16a34a';
@@ -33,12 +34,41 @@ const inp: React.CSSProperties = { height: 40, border: `1px solid ${BORDER}`, bo
 const lbl: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 6, textTransform: 'uppercase' as const, letterSpacing: '0.04em' };
 
 export default function AddListingPage() {
+  const { user, loading } = useAuth();
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const [form, setForm] = useState<Form>(INIT);
 
   const s = (k: keyof Form, v: string | string[]) => setForm(p => ({ ...p, [k]: v }));
   const toggleFeat = (f: string) => s('features', form.features.includes(f) ? form.features.filter(x => x !== f) : [...form.features, f]);
+
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
+      <Navbar />
+    </div>
+  );
+
+  if (!user) return (
+    <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
+      <Navbar />
+      <div style={{ paddingTop: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '70vh' }}>
+        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: 40, maxWidth: 360, width: '100%', textAlign: 'center' }}>
+          <div style={{ width: 60, height: 60, borderRadius: '50%', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <Lock size={26} color={BLUE} />
+          </div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 8 }}>Войдите в аккаунт чтобы подать объявление</h2>
+          <p style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.6, marginBottom: 24 }}>
+            Регистрация занимает меньше минуты и позволяет управлять объявлениями в личном кабинете.
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Link href="/login" style={{ flex: 1, background: BLUE, color: '#fff', borderRadius: 6, padding: '10px 0', textAlign: 'center', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>Войти</Link>
+            <Link href="/register" style={{ flex: 1, background: GREEN, color: '#fff', borderRadius: 6, padding: '10px 0', textAlign: 'center', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>Зарегистрироваться</Link>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
 
   if (done) return (
     <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>

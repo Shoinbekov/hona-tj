@@ -7,8 +7,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { DASHBOARD_LISTINGS, formatPrice } from '@/lib/data';
-import { Eye, MessageCircle, Plus, Edit3, Trash2, ToggleLeft, ToggleRight, BarChart3, Bell, Settings, LogOut, Home, Star, TrendingUp } from 'lucide-react';
+import { DASHBOARD_LISTINGS, formatPrice, getPriceInCurrency } from '@/lib/data';
+import { Eye, MessageCircle, Edit3, Trash2, ToggleLeft, ToggleRight, BarChart3, Bell, Settings, LogOut, Home, Star, TrendingUp } from 'lucide-react';
 
 const BLUE  = '#1a56db';
 const GREEN = '#16a34a';
@@ -16,7 +16,7 @@ const GREEN = '#16a34a';
 type Tab = 'listings' | 'stats' | 'notifications' | 'settings';
 
 export default function DashboardPage() {
-  const { currency } = useLanguage();
+  const { currency, rates } = useLanguage();
   const { user, signOut, loading } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('listings');
@@ -92,9 +92,6 @@ export default function DashboardPage() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>Личный кабинет</h1>
-              <Link href="/add-listing" style={{ background: GREEN, color: '#fff', borderRadius: 6, padding: '0 16px', height: 36, fontSize: 14, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5 }}>
-                <Plus size={16} /> Новое объявление
-              </Link>
             </div>
 
             {/* Stat cards */}
@@ -126,7 +123,7 @@ export default function DashboardPage() {
             {tab === 'listings' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {items.map(l => {
-                  const price = currency === 'USD' ? formatPrice(l.priceUSD, 'USD') : formatPrice(l.priceTJS, 'TJS');
+                  const price = formatPrice(getPriceInCurrency(l, currency, rates), currency);
                   return (
                     <div key={l.id} style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: 14, display: 'flex', gap: 14, opacity: l.active ? 1 : 0.55 }}>
                       <div style={{ width: 96, height: 72, borderRadius: 6, overflow: 'hidden', background: '#e5e7eb', flexShrink: 0, position: 'relative' }}>
