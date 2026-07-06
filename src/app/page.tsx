@@ -15,7 +15,7 @@ const BLUE = '#1a56db';
 
 const EMPTY: SearchFilters = {
   query: '', listingType: 'sale', propertyType: 'apartment',
-  district: '', rooms: '', rentPeriod: 'monthly',
+  city: 'tj', district: '', rooms: '', rentPeriod: 'monthly',
   minPrice: '', maxPrice: '', currency: 'USD',
   hasPhoto: false, fromOwner: false, newBuilding: false,
   furnished: false, pets: false, children: false,
@@ -34,6 +34,7 @@ export default function HomePage() {
     return MOCK_PROPERTIES.filter(p => {
       if (filters.listingType !== 'all' && p.listingType !== filters.listingType) return false;
       if (filters.propertyType !== 'all' && p.type !== filters.propertyType) return false;
+      if (filters.city && filters.city !== 'tj' && p.city !== filters.city) return false;
       if (filters.district && p.district !== filters.district) return false;
       if (filters.rooms) {
         const r = filters.rooms;

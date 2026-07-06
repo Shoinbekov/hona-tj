@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { SearchFilters } from '@/types';
-import { DISTRICTS } from '@/lib/data';
+import LocationPicker from '@/components/LocationPicker';
 
 const BLUE   = '#1a56db';
 const BORDER = '#d1d5db';
@@ -101,7 +101,7 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
   }
 
   const hasReset =
-    lt !== 'sale' || sub !== 'apartment' || !!f.district || !!f.rooms ||
+    lt !== 'sale' || sub !== 'apartment' || (f.city && f.city !== 'tj') || !!f.district || !!f.rooms ||
     !!f.minPrice || !!f.maxPrice || !!f.areaFrom || !!f.areaTo ||
     !!f.landAreaFrom || !!f.landAreaTo || f.hasPhoto || f.fromOwner || f.newBuilding;
 
@@ -133,12 +133,13 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
               {subtypes.map(s => <option key={s.v} value={s.v}>{s.l}</option>)}
             </select>
 
-            {/* Район */}
-            <select value={f.district} onChange={e => up({ district: e.target.value })}
-              style={{ ...CTRL, minWidth: 148, flex: '0 0 148px' }}>
-              <option value="">Все районы</option>
-              {DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
+            {/* Местоположение */}
+            <LocationPicker
+              city={f.city}
+              district={f.district}
+              onChange={(c, d) => up({ city: c, district: d })}
+              buttonStyle={{ minWidth: 210, flex: '0 0 210px' }}
+            />
 
             {/* Период — только аренда квартиры/дома */}
             {showPeriod && (
@@ -204,7 +205,8 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
             {hasReset && (
               <button
                 onClick={() => up({
-                  listingType: 'sale', propertyType: 'apartment', district: '', rooms: '',
+                  listingType: 'sale', propertyType: 'apartment',
+                  city: 'tj', district: '', rooms: '',
                   minPrice: '', maxPrice: '', rentPeriod: 'monthly',
                   areaFrom: '', areaTo: '', landAreaFrom: '', landAreaTo: '',
                   hasPhoto: false, fromOwner: false, newBuilding: false,

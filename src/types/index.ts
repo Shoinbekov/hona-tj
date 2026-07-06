@@ -30,12 +30,14 @@ export interface Property {
   isNew?: boolean;
   lat?: number;
   lng?: number;
+  city?: string;
 }
 
 export interface SearchFilters {
   query: string;
   listingType: ListingType | 'all';
   propertyType: PropertyType | 'all';
+  city: string;
   district: string;
   rooms: string;
   rentPeriod: 'monthly' | 'daily';

@@ -5,7 +5,8 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { MOCK_PROPERTIES, DISTRICTS, formatPrice } from '@/lib/data';
+import { MOCK_PROPERTIES, formatPrice } from '@/lib/data';
+import LocationPicker from '@/components/LocationPicker';
 
 const BLUE   = '#1a56db';
 const GREEN  = '#16a34a';
@@ -57,12 +58,13 @@ const RENT_TYPES = [
 interface Filters {
   listingType: 'sale' | 'rent';
   propertyType: string;
+  city: string;
   district: string;
 }
 
 export default function MapView() {
   const { currency } = useLanguage();
-  const [filters, setFilters] = useState<Filters>({ listingType: 'sale', propertyType: 'apartment', district: '' });
+  const [filters, setFilters] = useState<Filters>({ listingType: 'sale', propertyType: 'apartment', city: 'tj', district: '' });
   const up = (patch: Partial<Filters>) => setFilters(f => ({ ...f, ...patch }));
 
   const subtypes = filters.listingType === 'rent' ? RENT_TYPES : SALE_TYPES;
@@ -76,6 +78,7 @@ export default function MapView() {
   const visible = useMemo(() => WITH_COORDS.filter(p => {
     if (p.listingType !== filters.listingType) return false;
     if (p.type !== filters.propertyType) return false;
+    if (filters.city && filters.city !== 'tj' && p.city !== filters.city) return false;
     if (filters.district && p.district !== filters.district) return false;
     return true;
   }), [filters]);
@@ -100,12 +103,12 @@ export default function MapView() {
             {subtypes.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
           </select>
 
-          <select value={filters.district}
-            onChange={e => up({ district: e.target.value })}
-            style={{ ...CTRL, minWidth: 148 }}>
-            <option value="">Все районы</option>
-            {DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
+          <LocationPicker
+            city={filters.city}
+            district={filters.district}
+            onChange={(c, d) => up({ city: c, district: d })}
+            buttonStyle={{ minWidth: 200, height: 36, fontSize: 13 }}
+          />
 
           <span style={{ fontSize: 13, color: '#6b7280' }}>
             Показано <b style={{ color: '#111827' }}>{visible.length}</b> объявлений
