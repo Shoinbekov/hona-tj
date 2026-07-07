@@ -6,7 +6,7 @@ import SearchSection from '@/components/SearchFilters';
 import PropertyCard from '@/components/PropertyCard';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getPriceInCurrency } from '@/lib/data';
+import { MOCK_PROPERTIES, getPriceInCurrency } from '@/lib/data';
 import { fetchActiveListings } from '@/lib/listings';
 import { Property, SearchFilters } from '@/types';
 import { Home, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -34,9 +34,11 @@ export default function HomePage() {
 
   useEffect(() => {
     let cancelled = false;
+    // Fall back to the seeded mock listings while the database is still empty,
+    // so the site never looks broken/empty before real listings exist.
     fetchActiveListings()
-      .then(data => { if (!cancelled) setListings(data); })
-      .catch(() => { if (!cancelled) setListings([]); })
+      .then(data => { if (!cancelled) setListings(data.length > 0 ? data : MOCK_PROPERTIES); })
+      .catch(() => { if (!cancelled) setListings(MOCK_PROPERTIES); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);

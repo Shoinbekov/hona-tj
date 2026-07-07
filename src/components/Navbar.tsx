@@ -107,7 +107,7 @@ export default function Navbar() {
                     onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                     <LayoutDashboard size={15} color="#6b7280" />
-                    Личный кабинет
+                    Мои объявления
                   </Link>
                   <div style={{ height: 1, background: '#e5e7eb' }} />
                   <button onClick={handleSignOut}
@@ -154,7 +154,7 @@ export default function Navbar() {
             <>
               <Link href="/dashboard" onClick={() => setOpen(false)}
                 style={{ display: 'block', color: '#fff', fontSize: 15, padding: '11px 0', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                Личный кабинет
+                Мои объявления
               </Link>
               <button onClick={() => { setOpen(false); handleSignOut(); }}
                 style={{ display: 'block', color: '#fca5a5', fontSize: 15, padding: '11px 0', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>

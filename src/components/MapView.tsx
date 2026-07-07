@@ -133,6 +133,21 @@ export default function MapView() {
   const mapRef = useRef<LeafletMap | null>(null);
   const didSetInitialView = useRef(false);
 
+  // A fresh key per mount forces React to create a brand-new DOM node for MapContainer
+  // every time MapView mounts, so Leaflet never sees a container that still carries a
+  // stale `_leaflet_id` from a previous instance — that stale marker is what causes
+  // "Map container is being reused by another instance".
+  const [mapKey] = useState(() => `map-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
+  // Belt-and-suspenders: explicitly destroy the Leaflet map instance when MapView
+  // unmounts, in case something (fast refresh, back/forward nav) skips react-leaflet's
+  // own cleanup.
+  useEffect(() => {
+    return () => {
+      try { mapRef.current?.remove(); } catch { /* already removed */ }
+    };
+  }, []);
+
   // Pin the map to the Dushanbe view once, after Leaflet has fully finished initializing —
   // guards against Leaflet computing its size/view before the container has its final layout.
   function handleMapReady() {
@@ -201,8 +216,9 @@ export default function MapView() {
       </div>
 
       {/* ── Map ─────────────────────────────────────── */}
-      <div style={{ flex: 1, minHeight: 0 }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <MapContainer
+          key={mapKey}
           ref={mapRef}
           center={DUSHANBE_CENTER}
           zoom={DUSHANBE_ZOOM}

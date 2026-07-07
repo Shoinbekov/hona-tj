@@ -17,7 +17,7 @@ export default function MapPage() {
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Navbar />
-      <div style={{ flex: 1, marginTop: 60, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div style={{ flex: 1, marginTop: 60, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
         <MapView />
       </div>
     </div>
