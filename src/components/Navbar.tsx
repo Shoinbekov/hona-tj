@@ -43,8 +43,11 @@ export default function Navbar() {
   const displayName = user?.user_metadata?.name ?? user?.email?.split('@')[0] ?? 'Профиль';
   const initial = displayName[0]?.toUpperCase() ?? 'П';
 
+  // zIndex must clear Leaflet's own panes/controls (up to 1000) so the dropdown below
+  // isn't trapped under the map's stacking context — a child's z-index can never
+  // outrank content that already beats its positioned ancestor.
   return (
-    <header style={{ background: BLUE, height: 60, position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50 }}>
+    <header style={{ background: BLUE, height: 60, position: 'fixed', top: 0, left: 0, right: 0, zIndex: 2000 }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px', height: '100%', display: 'flex', alignItems: 'center' }}>
 
         {/* Logo */}
@@ -101,7 +104,7 @@ export default function Navbar() {
               </button>
 
               {dropOpen && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: '#fff', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', minWidth: 180, overflow: 'hidden', zIndex: 100 }}>
+                <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: '#fff', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', minWidth: 180, overflow: 'hidden', zIndex: 9999 }}>
                   <Link href="/dashboard" onClick={() => setDropOpen(false)}
                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', fontSize: 14, color: '#111827', textDecoration: 'none', fontWeight: 500 }}
                     onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
