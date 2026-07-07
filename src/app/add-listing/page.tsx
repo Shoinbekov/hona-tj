@@ -32,6 +32,18 @@ type Form = {
 
 const INIT: Form = { type:'apartment', deal:'sale', district:'', address:'', price:'', area:'', rooms:'', floor:'', floors:'', title:'', desc:'', phone:'', wa:'', features:[] };
 
+// Supabase/PostgREST errors carry the real cause in message/details/hint — surface all of it
+// instead of a generic message, so a NOT NULL/FK/RLS violation is actually diagnosable.
+function describeSupabaseError(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const e = err as { message?: string; details?: string | null; hint?: string | null; code?: string };
+    const parts = [e.message, e.details, e.hint].filter((p): p is string => !!p);
+    if (parts.length > 0) return parts.join(' — ') + (e.code ? ` (код: ${e.code})` : '');
+  }
+  if (err instanceof Error) return err.message;
+  return 'Неизвестная ошибка. Проверьте консоль браузера.';
+}
+
 const inp: React.CSSProperties = { height: 40, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '0 12px', fontSize: 14, color: '#111827', outline: 'none', width: '100%' };
 const lbl: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 6, textTransform: 'uppercase' as const, letterSpacing: '0.04em' };
 
@@ -48,21 +60,51 @@ export default function AddListingPage() {
   const toggleFeat = (f: string) => s('features', form.features.includes(f) ? form.features.filter(x => x !== f) : [...form.features, f]);
   const handlePhotos = (e: React.ChangeEvent<HTMLInputElement>) => setPhotos(Array.from(e.target.files ?? []).slice(0, 10));
 
+  // Required by the `listings` schema (NOT NULL / CHECK constraints) — catching these here
+  // gives a clear message instead of an opaque constraint-violation error from Postgres.
+  function validateForm(): string | null {
+    const title = form.title.trim() || TYPES.find(t => t.val === form.type)?.label;
+    if (!title) return 'Укажите заголовок объявления.';
+    const price = parseFloat(form.price);
+    if (!form.price.trim() || Number.isNaN(price) || price <= 0) return 'Укажите цену объявления — больше нуля.';
+    if (form.deal !== 'sale' && form.deal !== 'rent') return 'Выберите тип сделки.';
+    if (!TYPES.some(t => t.val === form.type)) return 'Выберите тип недвижимости.';
+    return null;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
+
     setSubmitError('');
+    const validationError = validateForm();
+    if (validationError) { setSubmitError(validationError); return; }
+
     setSubmitting(true);
     try {
       const supabase = createClient();
+
+      // Re-read the live session instead of trusting the (possibly stale) auth-context
+      // user, so the id we write always matches what auth.uid() sees server-side for RLS.
+      const { data: { user: sessionUser }, error: sessionError } = await supabase.auth.getUser();
+      if (sessionError) throw sessionError;
+      if (!sessionUser) throw new Error('Сессия истекла. Войдите заново и попробуйте снова.');
+
       // Every listing by this user shares one contact number, stored on their profile.
-      await supabase.from('profiles').update({ phone: form.wa || form.phone }).eq('id', user.id);
+      // Upsert, not update: accounts created before the auto-provisioning trigger existed
+      // may have no profiles row yet, and listings.user_id has a FK to profiles(id) — an
+      // update-only call would silently no-op and the listings insert below would then
+      // fail on that foreign key.
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({ id: sessionUser.id, phone: form.wa || form.phone }, { onConflict: 'id' });
+      if (profileError) throw profileError;
 
       await createListing({
-        userId: user.id,
-        title: form.title || (TYPES.find(t => t.val === form.type)?.label ?? 'Объявление'),
+        userId: sessionUser.id,
+        title: form.title.trim() || (TYPES.find(t => t.val === form.type)?.label ?? 'Объявление'),
         description: form.desc,
-        price: parseFloat(form.price) || 0,
+        price: parseFloat(form.price),
         listingType: form.deal as 'sale' | 'rent',
         propertyType: form.type as 'apartment' | 'house' | 'commercial' | 'land' | 'garage',
         city: 'dushanbe',
@@ -75,8 +117,9 @@ export default function AddListingPage() {
         photos,
       });
       setDone(true);
-    } catch {
-      setSubmitError('Не удалось опубликовать объявление. Попробуйте ещё раз.');
+    } catch (err) {
+      console.error('[add-listing] Не удалось опубликовать объявление:', err);
+      setSubmitError(describeSupabaseError(err));
     } finally {
       setSubmitting(false);
     }

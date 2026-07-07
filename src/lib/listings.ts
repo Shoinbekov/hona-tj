@@ -140,7 +140,10 @@ export async function createListing(input: NewListingInput): Promise<string> {
     .select('id')
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('[createListing] insert into listings failed:', error);
+    throw error;
+  }
   const listingId = listing.id as string;
 
   if (input.photos.length > 0) {
@@ -148,13 +151,19 @@ export async function createListing(input: NewListingInput): Promise<string> {
       const ext = file.name.split('.').pop() || 'jpg';
       const path = `${input.userId}/${listingId}/${i}-${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from('listing-photos').upload(path, file);
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('[createListing] photo upload failed:', uploadError, { path });
+        throw uploadError;
+      }
       const { data: pub } = supabase.storage.from('listing-photos').getPublicUrl(path);
       return { listing_id: listingId, url: pub.publicUrl, order: i };
     }));
 
     const { error: photosError } = await supabase.from('listing_photos').insert(photoRows);
-    if (photosError) throw photosError;
+    if (photosError) {
+      console.error('[createListing] insert into listing_photos failed:', photosError);
+      throw photosError;
+    }
   }
 
   return listingId;
