@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MOCK_PROPERTIES, formatPrice, getPriceInCurrency } from '@/lib/data';
+import { fetchListingById } from '@/lib/listings';
+import { Property } from '@/types';
 import {
   ArrowLeft, MapPin, BedDouble, Maximize2, Layers, Eye, Phone,
   MessageCircle, Heart, Share2, Check, ChevronLeft, ChevronRight, Calendar, Star,
@@ -19,15 +21,37 @@ export default function PropertyPage({ params }: { params: Promise<{ id: string 
   const { currency, rates } = useLanguage();
   const [imgIdx, setImgIdx] = useState(0);
   const [liked, setLiked] = useState(false);
+  const [dbProperty, setDbProperty] = useState<Property | null>(null);
+  const [dbLoading, setDbLoading] = useState(false);
 
-  const p = MOCK_PROPERTIES.find(x => x.id === id);
+  const mockProperty = MOCK_PROPERTIES.find(x => x.id === id);
+
+  // Real listings live in Supabase, not in the mock dataset — only hit the
+  // database when the id isn't one of the seeded mock properties.
+  useEffect(() => {
+    if (mockProperty) return;
+    let cancelled = false;
+    setDbLoading(true);
+    fetchListingById(id)
+      .then(prop => { if (!cancelled) setDbProperty(prop); })
+      .finally(() => { if (!cancelled) setDbLoading(false); });
+    return () => { cancelled = true; };
+  }, [id, mockProperty]);
+
+  const p = mockProperty ?? dbProperty;
 
   if (!p) return (
     <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
       <Navbar />
       <div style={{ paddingTop: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <p style={{ color: '#6b7280', marginBottom: 16 }}>Объявление не найдено</p>
-        <Link href="/" style={{ background: BLUE, color: '#fff', padding: '10px 20px', borderRadius: 6, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>На главную</Link>
+        {dbLoading ? (
+          <p style={{ color: '#6b7280' }}>Загрузка объявления…</p>
+        ) : (
+          <>
+            <p style={{ color: '#6b7280', marginBottom: 16 }}>Объявление не найдено</p>
+            <Link href="/" style={{ background: BLUE, color: '#fff', padding: '10px 20px', borderRadius: 6, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>На главную</Link>
+          </>
+        )}
       </div>
     </div>
   );

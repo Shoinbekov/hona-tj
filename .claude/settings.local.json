@@ -20,7 +20,31 @@
       "Bash(npx playwright *)",
       "Bash(cp \"C:/Users/SHOINB~1/AppData/Local/Temp/claude/C--Projects-hona-tj/17647ead-26aa-4f88-9d71-628548459e35/scratchpad/verify-cluster.js\" \"C:/Projects/hona-tj/verify-cluster.js\")",
       "Bash(node verify-cluster.js)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(npx supabase *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"https://ipbkanzjekulbwumgevx.supabase.co/rest/v1/\" -H \"apikey: sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T\")",
+      "Bash(curl -s \"https://ipbkanzjekulbwumgevx.supabase.co/rest/v1/\" -H \"apikey: sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T\")",
+      "Bash(curl -s \"https://ipbkanzjekulbwumgevx.supabase.co/rest/v1/listings?select=*\" -H \"apikey: sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T\" -H \"Authorization: Bearer sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"https://api.supabase.com/v1/projects\" -H \"Authorization: Bearer sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T\")",
+      "Bash(curl -s -w '\\\\nHTTP:%{http_code}\\\\n' https://ipbkanzjekulbwumgevx.supabase.co/storage/v1/bucket -H 'apikey: sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T' -H 'Authorization: Bearer sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T')",
+      "Bash(curl -s -w '\\\\nHTTP:%{http_code}\\\\n' 'https://ipbkanzjekulbwumgevx.supabase.co/auth/v1/admin/users?page=1&per_page=1' -H 'apikey: sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T' -H 'Authorization: Bearer sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T')",
+      "Bash(curl -s -o /dev/null -w 'HTTP:%{http_code}\\\\n' https://ipbkanzjekulbwumgevx.supabase.co/pg/query -H 'apikey: sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T' -H 'Authorization: Bearer sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T')",
+      "Bash(curl -s -o /dev/null -w 'HTTP:%{http_code}\\\\n' https://ipbkanzjekulbwumgevx.supabase.co/pg-meta/default/query -H 'apikey: sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T' -H 'Authorization: Bearer sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T')",
+      "Bash(env)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\({...p.dependencies, ...p.devDependencies}, null, 2\\)\\)\")",
+      "Bash(curl -s -w '\\\\nHTTP:%{http_code}\\\\n' -X POST https://ipbkanzjekulbwumgevx.supabase.co/storage/v1/bucket -H 'apikey: sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T' -H 'Authorization: Bearer sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T' -H 'Content-Type: application/json' -d '{\"id\":\"listing-photos\",\"name\":\"listing-photos\",\"public\":true,\"file_size_limit\":10485760,\"allowed_mime_types\":[\"image/png\",\"image/jpeg\",\"image/webp\"]}')",
+      "Bash(curl -s https://ipbkanzjekulbwumgevx.supabase.co/storage/v1/bucket -H 'apikey: sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T' -H 'Authorization: Bearer sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T')",
+      "Bash(curl -s -w '\\\\nHTTP:%{http_code}\\\\n' https://api.supabase.com/v1/projects -H 'Authorization: Bearer sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T')",
+      "Bash(curl -s -w '\\\\nHTTP:%{http_code}\\\\n' -X POST https://api.supabase.com/v1/projects/ipbkanzjekulbwumgevx/database/query -H 'Authorization: Bearer sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T' -H 'Content-Type: application/json' -d '{\"query\":\"select 1;\"}')",
+      "Bash(curl -s -w '\\\\nHTTP:%{http_code}\\\\n' https://api.supabase.com/v1/projects -H 'apikey: sb_secret_uegHrZxQis_QO5iYnjGM9A_nEDA026T')",
+      "Bash(node verify-supabase.js)",
+      "Bash(node verify-property.js)",
+      "Bash(curl -s -o /dev/null -w \"home:%{http_code} time:%{time_total}\\\\n\" http://localhost:3000/ --max-time 10)",
+      "Bash(curl -s -o /dev/null -w \"property/1:%{http_code} time:%{time_total}\\\\n\" http://localhost:3000/property/1 --max-time 15)",
+      "Read(//tmp/**)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(pkill -f \"next-server\")",
+      "Bash(rm -f verify-supabase.js verify-property.js verify-home.png verify-add-listing-guest.png verify-property-mock.png verify-property.png)"
     ]
   }
 }

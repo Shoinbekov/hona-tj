@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import SearchSection from '@/components/SearchFilters';
 import PropertyCard from '@/components/PropertyCard';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { MOCK_PROPERTIES, getPriceInCurrency } from '@/lib/data';
-import { SearchFilters } from '@/types';
+import { getPriceInCurrency } from '@/lib/data';
+import { fetchActiveListings } from '@/lib/listings';
+import { Property, SearchFilters } from '@/types';
 import { Home, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PER_PAGE = 6;
@@ -28,10 +29,21 @@ export default function HomePage() {
   const { currency, rates } = useLanguage();
   const [filters, setFilters] = useState<SearchFilters>(EMPTY);
   const [page, setPage] = useState(1);
+  const [listings, setListings] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchActiveListings()
+      .then(data => { if (!cancelled) setListings(data); })
+      .catch(() => { if (!cancelled) setListings([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const filtered = useMemo(() => {
     setPage(1);
-    return MOCK_PROPERTIES.filter(p => {
+    return listings.filter(p => {
       if (filters.listingType !== 'all' && p.listingType !== filters.listingType) return false;
       if (filters.propertyType !== 'all' && p.type !== filters.propertyType) return false;
       if (filters.city && filters.city !== 'tj' && p.city !== filters.city) return false;
@@ -59,7 +71,7 @@ export default function HomePage() {
       if (filters.areaTo    && p.area > +filters.areaTo)   return false;
       return true;
     });
-  }, [filters, currency, rates]);
+  }, [listings, filters, currency, rates]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -76,7 +88,11 @@ export default function HomePage() {
 
       {/* Listings */}
       <main style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 16px 48px' }}>
-        {paginated.length > 0 ? (
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '80px 0', color: '#9ca3af', fontSize: 14 }}>
+            Загрузка объявлений…
+          </div>
+        ) : paginated.length > 0 ? (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="cards-grid">
               {paginated.map(p => <PropertyCard key={p.id} property={p} />)}

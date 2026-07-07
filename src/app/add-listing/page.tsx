@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase';
+import { createListing } from '@/lib/listings';
 import { Home, Building2, Briefcase, TreePine, Check, Phone, MessageCircle, MapPin, DollarSign, Camera, Lock } from 'lucide-react';
 
 const BLUE   = '#1a56db';
@@ -38,9 +40,47 @@ export default function AddListingPage() {
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const [form, setForm] = useState<Form>(INIT);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const s = (k: keyof Form, v: string | string[]) => setForm(p => ({ ...p, [k]: v }));
   const toggleFeat = (f: string) => s('features', form.features.includes(f) ? form.features.filter(x => x !== f) : [...form.features, f]);
+  const handlePhotos = (e: React.ChangeEvent<HTMLInputElement>) => setPhotos(Array.from(e.target.files ?? []).slice(0, 10));
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+    setSubmitError('');
+    setSubmitting(true);
+    try {
+      const supabase = createClient();
+      // Every listing by this user shares one contact number, stored on their profile.
+      await supabase.from('profiles').update({ phone: form.wa || form.phone }).eq('id', user.id);
+
+      await createListing({
+        userId: user.id,
+        title: form.title || (TYPES.find(t => t.val === form.type)?.label ?? 'Объявление'),
+        description: form.desc,
+        price: parseFloat(form.price) || 0,
+        listingType: form.deal as 'sale' | 'rent',
+        propertyType: form.type as 'apartment' | 'house' | 'commercial' | 'land' | 'garage',
+        city: 'dushanbe',
+        district: form.district,
+        address: form.address,
+        rooms: form.rooms ? parseInt(form.rooms, 10) : null,
+        area: form.area ? parseFloat(form.area) : null,
+        floor: form.floor ? parseInt(form.floor, 10) : null,
+        totalFloors: form.floors ? parseInt(form.floors, 10) : null,
+        photos,
+      });
+      setDone(true);
+    } catch {
+      setSubmitError('Не удалось опубликовать объявление. Попробуйте ещё раз.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
@@ -120,7 +160,7 @@ export default function AddListingPage() {
             ))}
           </div>
 
-          <form onSubmit={e => { e.preventDefault(); setDone(true); }}>
+          <form onSubmit={handleSubmit}>
             <div style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: 24 }}>
 
               {/* STEP 0 */}
@@ -246,13 +286,16 @@ export default function AddListingPage() {
 
                 <div style={{ marginBottom: 20 }}>
                   <label style={lbl}>Фотографии</label>
-                  <div style={{ border: `2px dashed ${BORDER}`, borderRadius: 8, padding: '32px 20px', textAlign: 'center', cursor: 'pointer', background: '#f9fafb' }}>
+                  <label style={{ border: `2px dashed ${BORDER}`, borderRadius: 8, padding: '32px 20px', textAlign: 'center', cursor: 'pointer', background: '#f9fafb', display: 'block' }}>
+                    <input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={handlePhotos} style={{ display: 'none' }} />
                     <div style={{ width: 44, height: 44, borderRadius: 8, background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
                       <Camera size={22} color={BLUE} />
                     </div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Нажмите для загрузки фото</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 4 }}>
+                      {photos.length > 0 ? `Выбрано фото: ${photos.length}` : 'Нажмите для загрузки фото'}
+                    </div>
                     <div style={{ fontSize: 12, color: '#9ca3af' }}>PNG, JPG до 10 МБ · до 10 фото</div>
-                  </div>
+                  </label>
                 </div>
 
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -300,10 +343,13 @@ export default function AddListingPage() {
                   </div>
                 </div>
 
+                {submitError && (
+                  <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{submitError}</p>
+                )}
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button type="button" onClick={() => setStep(2)} style={{ height: 44, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '0 20px', fontSize: 14, color: '#374151', background: '#fff', cursor: 'pointer' }}>← Назад</button>
-                  <button type="submit" style={{ flex: 1, height: 44, background: GREEN, color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    <Check size={16} /> Опубликовать объявление
+                  <button type="submit" disabled={submitting} style={{ flex: 1, height: 44, background: GREEN, color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <Check size={16} /> {submitting ? 'Публикация…' : 'Опубликовать объявление'}
                   </button>
                 </div>
               </>}
