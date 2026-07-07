@@ -12,6 +12,7 @@ import { Property, SearchFilters } from '@/types';
 import { Home, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PER_PAGE = 6;
+const MIN_LISTINGS = 3;
 const BLUE = '#1a56db';
 
 const EMPTY: SearchFilters = {
@@ -34,10 +35,10 @@ export default function HomePage() {
 
   useEffect(() => {
     let cancelled = false;
-    // Fall back to the seeded mock listings while the database is still empty,
-    // so the site never looks broken/empty before real listings exist.
+    // Top up with the seeded mock listings while the database is still sparse, so the
+    // homepage never looks empty/broken before enough real listings have been posted.
     fetchActiveListings()
-      .then(data => { if (!cancelled) setListings(data.length > 0 ? data : MOCK_PROPERTIES); })
+      .then(data => { if (!cancelled) setListings(data.length < MIN_LISTINGS ? [...data, ...MOCK_PROPERTIES] : data); })
       .catch(() => { if (!cancelled) setListings(MOCK_PROPERTIES); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };

@@ -87,6 +87,26 @@ export async function fetchActiveListings(): Promise<Property[]> {
   return data.map(rowToProperty);
 }
 
+export interface UserListing extends Property {
+  isActive: boolean;
+}
+
+// All of this user's own listings, active or hidden — used by the dashboard, which
+// (unlike the public homepage) needs to show the owner their inactive listings too.
+export async function fetchListingsByUser(userId: string): Promise<UserListing[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('listings')
+    .select(LISTING_SELECT)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .order('order', { foreignTable: 'listing_photos', ascending: true })
+    .returns<ListingRow[]>();
+
+  if (error) throw error;
+  return data.map(row => ({ ...rowToProperty(row), isActive: row.is_active }));
+}
+
 export async function fetchListingById(id: string): Promise<Property | null> {
   const supabase = createClient();
   const { data, error } = await supabase

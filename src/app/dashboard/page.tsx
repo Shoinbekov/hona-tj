@@ -7,24 +7,45 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { DASHBOARD_LISTINGS, formatPrice, getPriceInCurrency } from '@/lib/data';
+import { formatPrice, getPriceInCurrency } from '@/lib/data';
+import { fetchListingsByUser } from '@/lib/listings';
+import { Property } from '@/types';
 import { Eye, MessageCircle, Edit3, Trash2, ToggleLeft, ToggleRight, BarChart3, Bell, Settings, LogOut, Home, Star, TrendingUp } from 'lucide-react';
 
 const BLUE  = '#1a56db';
 const GREEN = '#16a34a';
 
 type Tab = 'listings' | 'stats' | 'notifications' | 'settings';
+type DashboardItem = Property & { active: boolean; myViews: number; myInquiries: number };
 
 export default function DashboardPage() {
   const { currency, rates } = useLanguage();
   const { user, signOut, loading } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('listings');
-  const [items, setItems] = useState(DASHBOARD_LISTINGS.map(l => ({ ...l, active: true })));
+  const [items, setItems] = useState<DashboardItem[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    setItemsLoading(true);
+    fetchListingsByUser(user.id)
+      .then(data => {
+        if (cancelled) return;
+        setItems(data.map(l => ({ ...l, active: l.isActive, myViews: 0, myInquiries: 0 })));
+      })
+      .catch(err => {
+        console.error('[dashboard] Не удалось загрузить объявления пользователя:', err);
+        if (!cancelled) setItems([]);
+      })
+      .finally(() => { if (!cancelled) setItemsLoading(false); });
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   if (loading || !user) return null;
 
@@ -121,6 +142,11 @@ export default function DashboardPage() {
 
             {/* LISTINGS */}
             {tab === 'listings' && (
+              itemsLoading ? (
+                <div style={{ background: '#fff', borderRadius: 8, padding: '60px 20px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', color: '#9ca3af', fontSize: 14 }}>
+                  Загрузка объявлений…
+                </div>
+              ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {items.map(l => {
                   const price = formatPrice(getPriceInCurrency(l, currency, rates), currency);
@@ -172,6 +198,7 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
+              )
             )}
 
             {/* STATS */}
