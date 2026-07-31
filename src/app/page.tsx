@@ -8,27 +8,30 @@ import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MOCK_PROPERTIES, getPriceInCurrency } from '@/lib/data';
 import { fetchActiveListings } from '@/lib/listings';
-import { Property, SearchFilters } from '@/types';
+import { Property } from '@/types';
+import { FilterState, emptyFilterState } from '@/lib/filterConfig';
 import { Home, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PER_PAGE = 6;
 const MIN_LISTINGS = 3;
 const BLUE = '#1a56db';
 
-const EMPTY: SearchFilters = {
-  query: '', listingType: 'sale', propertyType: 'apartment',
-  city: 'tj', district: '', rooms: '', rentPeriod: 'monthly',
-  minPrice: '', maxPrice: '', currency: 'USD',
-  hasPhoto: false, fromOwner: false, newBuilding: false,
-  furnished: false, pets: false, children: false,
-  floorFrom: '', floorTo: '', notFirstFloor: false, notLastFloor: false,
-  areaFrom: '', areaTo: '', landAreaFrom: '', landAreaTo: '',
-  landType: '', utilities: [], commercialTypes: [],
-};
+function matchesRoomsSelection(sel: string[], rooms: number): boolean {
+  if (sel.length === 0) return true;
+  return sel.some(v => v.endsWith('+') ? rooms >= parseInt(v, 10) : rooms === Number(v));
+}
+
+function matchesQuery(p: Property, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const haystack = [p.title.ru, p.title.tj, p.title.en, p.description.ru, p.description.tj, p.description.en]
+    .join(' ').toLowerCase();
+  return haystack.includes(q);
+}
 
 export default function HomePage() {
   const { currency, rates } = useLanguage();
-  const [filters, setFilters] = useState<SearchFilters>(EMPTY);
+  const [filters, setFilters] = useState<FilterState>(emptyFilterState);
   const [page, setPage] = useState(1);
   const [listings, setListings] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,32 +49,50 @@ export default function HomePage() {
 
   const filtered = useMemo(() => {
     setPage(1);
+    // "Возьму в аренду" describes people looking to rent something in — it isn't a kind
+    // of listing this database stores, so that tab always shows zero results.
+    if (filters.category === 'rent_wanted') return [];
+
     return listings.filter(p => {
-      if (filters.listingType !== 'all' && p.listingType !== filters.listingType) return false;
-      if (filters.propertyType !== 'all' && p.type !== filters.propertyType) return false;
+      if (p.listingType !== filters.mode) return false;
+      if (p.type !== filters.category) return false;
       if (filters.city && filters.city !== 'tj' && p.city !== filters.city) return false;
       if (filters.district && p.district !== filters.district) return false;
-      if (filters.rooms) {
-        const r = filters.rooms;
-        if (r === '5+') { if (p.rooms < 5) return false; }
-        else if (r.includes('-')) {
-          const [lo, hi] = r.split('-').map(Number);
-          if (p.rooms < lo || p.rooms > hi) return false;
-        } else {
-          if (p.rooms !== +r) return false;
-        }
-      }
-      const price = getPriceInCurrency(p, currency, rates);
+
+      const rooms = filters.values.rooms as string[] | undefined;
+      if (rooms && !matchesRoomsSelection(rooms, p.rooms)) return false;
+
+      let price = getPriceInCurrency(p, currency, rates);
+      if (filters.priceUnit === 'sqm' && p.area) price = price / p.area;
+      if (filters.priceUnit === 'sotka' && p.area) price = price / (p.area / 100);
       if (filters.minPrice && price < +filters.minPrice) return false;
       if (filters.maxPrice && price > +filters.maxPrice) return false;
-      if (filters.hasPhoto && p.images.length === 0) return false;
-      if (filters.furnished && !p.features.some(f => f.includes('Мебел') || f.includes('мебел'))) return false;
-      if (filters.notFirstFloor && p.floor === 1) return false;
-      if (filters.notLastFloor && p.floor !== undefined && p.totalFloors !== undefined && p.floor === p.totalFloors) return false;
-      if (filters.floorFrom && p.floor !== undefined && p.floor < +filters.floorFrom) return false;
-      if (filters.floorTo   && p.floor !== undefined && p.floor > +filters.floorTo)   return false;
-      if (filters.areaFrom  && p.area < +filters.areaFrom) return false;
-      if (filters.areaTo    && p.area > +filters.areaTo)   return false;
+
+      if (filters.values.hasPhoto && p.images.length === 0) return false;
+
+      const furnished = filters.values.furnished as string[] | undefined;
+      if (furnished?.length && !p.features.some(f => f.toLowerCase().includes('мебел'))) return false;
+
+      if (filters.values.notFirstFloor && p.floor === 1) return false;
+      if (filters.values.notLastFloor && p.floor !== undefined && p.totalFloors !== undefined && p.floor === p.totalFloors) return false;
+
+      const floorFrom = filters.values.floorFrom as string | undefined;
+      const floorTo   = filters.values.floorTo as string | undefined;
+      if (floorFrom && p.floor !== undefined && p.floor < +floorFrom) return false;
+      if (floorTo   && p.floor !== undefined && p.floor > +floorTo)   return false;
+
+      const areaFrom = filters.values.areaFrom as string | undefined;
+      const areaTo   = filters.values.areaTo as string | undefined;
+      if (areaFrom && p.area < +areaFrom) return false;
+      if (areaTo   && p.area > +areaTo)   return false;
+
+      const landAreaFrom = filters.values.landAreaFrom as string | undefined;
+      const landAreaTo   = filters.values.landAreaTo as string | undefined;
+      if (landAreaFrom && p.area / 100 < +landAreaFrom) return false;
+      if (landAreaTo   && p.area / 100 > +landAreaTo)   return false;
+
+      if (!matchesQuery(p, filters.query)) return false;
+
       return true;
     });
   }, [listings, filters, currency, rates]);
@@ -141,7 +162,7 @@ export default function HomePage() {
             </div>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Ничего не найдено</h3>
             <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 20 }}>Попробуйте изменить параметры поиска</p>
-            <button onClick={() => setFilters(EMPTY)}
+            <button onClick={() => setFilters(emptyFilterState())}
               style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 6, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
               Сбросить фильтры
             </button>

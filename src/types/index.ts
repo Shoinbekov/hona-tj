@@ -33,36 +33,6 @@ export interface Property {
   city?: string;
 }
 
-export interface SearchFilters {
-  query: string;
-  listingType: ListingType | 'all';
-  propertyType: PropertyType | 'all';
-  city: string;
-  district: string;
-  rooms: string;
-  rentPeriod: 'monthly' | 'daily';
-  minPrice: string;
-  maxPrice: string;
-  currency: Currency;
-  hasPhoto: boolean;
-  fromOwner: boolean;
-  newBuilding: boolean;
-  furnished: boolean;
-  pets: boolean;
-  children: boolean;
-  floorFrom: string;
-  floorTo: string;
-  notFirstFloor: boolean;
-  notLastFloor: boolean;
-  areaFrom: string;
-  areaTo: string;
-  landAreaFrom: string;
-  landAreaTo: string;
-  landType: string;
-  utilities: string[];
-  commercialTypes: string[];
-}
-
 export interface DashboardStats {
   totalListings: number;
   activeListings: number;

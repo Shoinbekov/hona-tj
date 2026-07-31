@@ -1,264 +1,229 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { Currency, SearchFilters } from '@/types';
+import { Currency } from '@/types';
 import LocationPicker from '@/components/LocationPicker';
 import { useLanguage } from '@/contexts/LanguageContext';
+import {
+  CATEGORIES, CategoryConfig, FilterState, FilterMode,
+  defaultValues, getCategoryConfig,
+} from '@/lib/filterConfig';
+import {
+  CTRL, FieldRenderer, RangeField, ToggleButtons, FieldValue,
+} from '@/components/filters/FilterFields';
 
 const BLUE   = '#1a56db';
 const BORDER = '#d1d5db';
-const CTRL: React.CSSProperties = {
-  height: 40, border: `1px solid ${BORDER}`, borderRadius: 6,
-  fontSize: 14, color: '#111827', background: '#fff',
-  padding: '0 10px', outline: 'none', width: '100%',
-};
-const SMALL: React.CSSProperties = { ...CTRL, width: 72, minWidth: 0, padding: '0 8px' };
 
-// ─── Reference data ────────────────────────────────────────────────────────
-
-const SALE_TYPES = [
-  { v: 'apartment',  l: 'квартиру' },
-  { v: 'house',      l: 'дом или дачу' },
-  { v: 'garage',     l: 'гараж или паркинг' },
-  { v: 'land',       l: 'участок' },
-  { v: 'commercial', l: 'коммерческую недвижимость' },
-  { v: 'business',   l: 'бизнес' },
-  { v: 'industrial', l: 'промбазы и склады' },
-];
-
-const RENT_TYPES = [
-  { v: 'apartment',  l: 'квартиру' },
-  { v: 'room',       l: 'комнату' },
-  { v: 'house',      l: 'дом или дачу' },
-  { v: 'garage',     l: 'гараж или паркинг' },
-  { v: 'commercial', l: 'коммерческую недвижимость' },
-  { v: 'industrial', l: 'промбазы и склады' },
-];
-
-const ROOM_OPTS: [string, string][] = [
-  ['',    'любой комнатности'],
-  ['1',   '1 - комн.'],
-  ['1-2', '1-2 - комн.'],
-  ['2',   '2 - комн.'],
-  ['2-3', '2-3 - комн.'],
-  ['3',   '3 - комн.'],
-  ['3-4', '3-4 - комн.'],
-  ['4',   '4 - комн.'],
-  ['4-5', '4-5 - комн.'],
-  ['5+',  '5 и более комн.'],
-];
-
-// ─── Logic helpers ─────────────────────────────────────────────────────────
-
-function needsRooms(sub: string)  { return sub === 'apartment' || sub === 'house'; }
-function needsPeriod(lt: string, sub: string) { return lt === 'rent' && (sub === 'apartment' || sub === 'house'); }
-function needsAreaSqm(sub: string)  { return sub === 'commercial'; }
-function needsAreaSotok(sub: string) { return sub === 'land'; }
-
-function priceUnit(lt: string, sub: string, period: string, currency: Currency): string {
-  if (currency === 'USD') {
-    if (lt === 'rent' && period === 'daily') return 'USD/сут.';
-    if (sub === 'room' || sub === 'industrial') return 'USD/мес.';
-    return 'USD';
-  }
-  if (currency === 'RUB') {
-    if (lt === 'rent' && period === 'daily') return 'руб./сут.';
-    if (sub === 'room' || sub === 'industrial') return 'руб./мес.';
-    return 'руб.';
-  }
-  if (lt === 'rent' && period === 'daily') return 'сом/сут.';
-  if (sub === 'room' || sub === 'industrial') return 'сом/мес.';
+function currencySuffix(currency: Currency): string {
+  if (currency === 'USD') return '$';
+  if (currency === 'RUB') return 'руб.';
   return 'сом.';
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────
-
 interface Props {
-  filters: SearchFilters;
-  onChange: (f: SearchFilters) => void;
+  filters: FilterState;
+  onChange: (f: FilterState) => void;
   resultCount: number;
 }
 
 export default function SmartFilter({ filters: f, onChange, resultCount }: Props) {
   const { currency } = useLanguage();
-  const up = (patch: Partial<SearchFilters>) => onChange({ ...f, ...patch });
+  const [showExtra, setShowExtra] = useState(false);
 
-  const lt  = f.listingType;
-  const sub = f.propertyType === 'all' ? '' : (f.propertyType as string);
+  const cfg = getCategoryConfig(f.mode, f.category);
+  const tabs = CATEGORIES[f.mode];
 
-  const subtypes   = lt === 'rent' ? RENT_TYPES : SALE_TYPES;
-  const showPeriod = needsPeriod(lt, sub);
-  const showRooms  = needsRooms(sub);
-  const showSqm    = needsAreaSqm(sub);
-  const showSotok  = needsAreaSotok(sub);
-  const unit       = priceUnit(lt, sub, f.rentPeriod, currency);
+  function set(id: string, v: FieldValue) {
+    onChange({ ...f, values: { ...f.values, [id]: v } });
+  }
 
-  function onDealChange(val: string) {
-    const subs = val === 'rent' ? RENT_TYPES : SALE_TYPES;
-    const keep = sub && subs.some(s => s.v === sub);
-    up({
-      listingType:  val as SearchFilters['listingType'],
-      propertyType: (keep ? sub : subs[0].v) as SearchFilters['propertyType'],
-      rooms: '', rentPeriod: 'monthly',
-      areaFrom: '', areaTo: '', landAreaFrom: '', landAreaTo: '',
+  function switchMode(mode: FilterMode) {
+    if (mode === f.mode) return;
+    const nextCfg = CATEGORIES[mode][0];
+    setShowExtra(false);
+    onChange({
+      ...f, mode, category: nextCfg.key,
+      minPrice: '', maxPrice: '', priceUnit: nextCfg.price?.unitOptions?.[0].value ?? 'total',
+      values: defaultValues(nextCfg),
     });
   }
 
-  function onSubChange(val: string) {
-    up({
-      propertyType: val as SearchFilters['propertyType'],
-      rooms: '', rentPeriod: 'monthly',
-      areaFrom: '', areaTo: '', landAreaFrom: '', landAreaTo: '',
+  function switchCategory(next: CategoryConfig) {
+    if (next.key === f.category) return;
+    setShowExtra(false);
+    onChange({
+      ...f, category: next.key,
+      minPrice: '', maxPrice: '', priceUnit: next.price?.unitOptions?.[0].value ?? 'total',
+      values: defaultValues(next),
+    });
+  }
+
+  function clearAll() {
+    setShowExtra(false);
+    onChange({
+      ...f, city: 'tj', district: '', minPrice: '', maxPrice: '', query: '',
+      priceUnit: cfg.price?.unitOptions?.[0].value ?? 'total',
+      values: defaultValues(cfg),
     });
   }
 
   const hasReset =
-    lt !== 'sale' || sub !== 'apartment' || (f.city && f.city !== 'tj') || !!f.district || !!f.rooms ||
-    !!f.minPrice || !!f.maxPrice || !!f.areaFrom || !!f.areaTo ||
-    !!f.landAreaFrom || !!f.landAreaTo || f.hasPhoto || f.fromOwner || f.newBuilding;
+    f.city !== 'tj' || !!f.district || !!f.minPrice || !!f.maxPrice || !!f.query ||
+    Object.values(f.values).some(v => Array.isArray(v) ? v.length > 0 : (typeof v === 'boolean' ? v : !!v));
 
-  // Row-2 checkboxes: buy → фото + новостройка + хозяев; rent → фото + хозяев
-  const chkItems: [keyof SearchFilters, string][] = [
-    ['hasPhoto',   'есть фото'],
-    ...(lt !== 'rent' ? [['newBuilding', 'новостройка'] as [keyof SearchFilters, string]] : []),
-    ['fromOwner',  'от хозяев'],
-  ];
+  const hasExtra = cfg.extra.length > 0 || cfg.extraCheckboxes.length > 0;
+
+  const findBtn = (
+    <button type="button" style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 6, height: 40, padding: '0 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
+      Показать результаты ({resultCount})
+    </button>
+  );
 
   return (
     <>
-      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '12px 0', position: 'sticky', top: 60, zIndex: 40 }}>
+      <div style={{ background: '#f3f4f6', padding: '10px 0', position: 'sticky', top: 60, zIndex: 40 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px' }}>
+          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', padding: '12px 14px' }}>
 
-          {/* ── Строка 1 ──────────────────────────────── */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* ── Базовая строка: режим + категория + поля вплотную ─────── */}
+            <div className="ff-row" style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
 
-            {/* Тип сделки */}
-            <select value={lt} onChange={e => onDealChange(e.target.value)}
-              style={{ ...CTRL, minWidth: 128, flex: '0 0 128px' }}>
-              <option value="sale">Купить</option>
-              <option value="rent">Арендовать</option>
-            </select>
-
-            {/* Тип объекта */}
-            <select value={sub} onChange={e => onSubChange(e.target.value)}
-              style={{ ...CTRL, minWidth: 200, flex: '0 0 200px' }}>
-              {subtypes.map(s => <option key={s.v} value={s.v}>{s.l}</option>)}
-            </select>
-
-            {/* Местоположение */}
-            <LocationPicker
-              city={f.city}
-              district={f.district}
-              onChange={(c, d) => up({ city: c, district: d })}
-              buttonStyle={{ minWidth: 210, flex: '0 0 210px' }}
-            />
-
-            {/* Период — только аренда квартиры/дома */}
-            {showPeriod && (
-              <select value={f.rentPeriod}
-                onChange={e => up({ rentPeriod: e.target.value as 'monthly' | 'daily' })}
-                style={{ ...CTRL, minWidth: 120, flex: '0 0 120px' }}>
-                <option value="monthly">Помесячно</option>
-                <option value="daily">Посуточно</option>
+              <select value={f.mode} onChange={e => switchMode(e.target.value as FilterMode)}
+                style={{ ...CTRL, minWidth: 104, flex: '0 0 104px', fontWeight: 600, color: BLUE }}>
+                <option value="sale">Купить</option>
+                <option value="rent">Снять</option>
               </select>
-            )}
 
-            {/* Комнатность — квартира/дом */}
-            {showRooms && (
-              <select value={f.rooms} onChange={e => up({ rooms: e.target.value })}
-                style={{ ...CTRL, minWidth: 175, flex: '0 0 175px' }}>
-                {ROOM_OPTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              <select value={f.category} onChange={e => { const next = tabs.find(t => t.key === e.target.value); if (next) switchCategory(next); }}
+                style={{ ...CTRL, minWidth: 168, flex: '0 0 168px' }}>
+                {tabs.map(t => <option key={t.key} value={t.key}>{t.tabLabel}</option>)}
               </select>
+
+              {cfg.base.map(field => (
+                <FieldRenderer key={field.id} field={field} values={f.values} set={set} />
+              ))}
+
+              <LocationPicker
+                city={f.city}
+                district={f.district}
+                onChange={(c, d) => onChange({ ...f, city: c, district: d })}
+                buttonStyle={{ minWidth: 168, flex: '0 0 168px' }}
+              />
+
+              {cfg.hasPrice && (
+                <>
+                  {cfg.price?.unitOptions && (
+                    <ToggleButtons
+                      options={cfg.price.unitOptions}
+                      value={f.priceUnit}
+                      onChange={v => onChange({ ...f, priceUnit: (v as string) || cfg.price!.unitOptions![0].value })}
+                    />
+                  )}
+                  <RangeField
+                    from={f.minPrice} to={f.maxPrice} unit={currencySuffix(currency)}
+                    onFrom={v => onChange({ ...f, minPrice: v })}
+                    onTo={v => onChange({ ...f, maxPrice: v })}
+                  />
+                </>
+              )}
+
+              {findBtn}
+
+              <Link href="/map" style={{ background: '#fff', color: BLUE, border: `1px solid ${BLUE}`, borderRadius: 6, height: 40, padding: '0 14px', fontSize: 14, fontWeight: 500, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+                На карте
+              </Link>
+            </div>
+
+            {/* ── Чекбоксы базовой строки ────────────────── */}
+            {cfg.baseCheckboxes.length > 0 && (
+              <div style={{ display: 'flex', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
+                {cfg.baseCheckboxes.map(field => (
+                  <FieldRenderer key={field.id} field={field} values={f.values} set={set} />
+                ))}
+              </div>
             )}
 
-            {/* Площадь м² — коммерческая */}
-            {showSqm && (
-              <>
-                <input type="number" placeholder="От" value={f.areaFrom}
-                  onChange={e => up({ areaFrom: e.target.value })} style={SMALL} />
-                <input type="number" placeholder="До" value={f.areaTo}
-                  onChange={e => up({ areaTo: e.target.value })} style={SMALL} />
-                <span style={{ fontSize: 13, color: '#6b7280', flexShrink: 0 }}>м²</span>
-              </>
+            {/* ── Ещё настройки ───────────────────────────── */}
+            {hasExtra && showExtra && (
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f2f4' }}>
+                {cfg.extra.length > 0 && (
+                  <div className="ff-grid">
+                    {cfg.extra.map(field => (
+                      <FieldRenderer key={field.id} field={field} values={f.values} set={set} fill />
+                    ))}
+                  </div>
+                )}
+                {cfg.extraCheckboxes.length > 0 && (
+                  <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
+                    {cfg.extraCheckboxes.map(field => (
+                      <FieldRenderer key={field.id} field={field} values={f.values} set={set} />
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
-            {/* Площадь соток — участок */}
-            {showSotok && (
-              <>
-                <input type="number" placeholder="От" value={f.landAreaFrom}
-                  onChange={e => up({ landAreaFrom: e.target.value })} style={SMALL} />
-                <input type="number" placeholder="До" value={f.landAreaTo}
-                  onChange={e => up({ landAreaTo: e.target.value })} style={SMALL} />
-                <span style={{ fontSize: 13, color: '#6b7280', flexShrink: 0 }}>соток</span>
-              </>
-            )}
+            {/* ── Поиск по тексту ─────────────────────────── */}
+            <div style={{ marginTop: 8 }}>
+              <input
+                type="text"
+                placeholder="Поиск по тексту объявления"
+                value={f.query}
+                onChange={e => onChange({ ...f, query: e.target.value })}
+                style={{ ...CTRL, width: '100%' }}
+              />
+            </div>
 
-            {/* Цена */}
-            <input type="number" placeholder="От" value={f.minPrice} min="0"
-              onChange={e => {
-                const n = parseFloat(e.target.value);
-                up({ minPrice: !isNaN(n) && n < 0 ? '0' : e.target.value });
-              }}
-              style={{ ...CTRL, minWidth: 88, flex: '1 1 88px' }} />
-            <span style={{ fontSize: 14, color: '#9ca3af', flexShrink: 0 }}>—</span>
-            <input type="number" placeholder="До" value={f.maxPrice} min="0"
-              onChange={e => {
-                const n = parseFloat(e.target.value);
-                up({ maxPrice: !isNaN(n) && n < 0 ? '0' : e.target.value });
-              }}
-              style={{ ...CTRL, minWidth: 88, flex: '1 1 88px' }} />
-            <span style={{ fontSize: 13, color: '#6b7280', whiteSpace: 'nowrap', flexShrink: 0 }}>{unit}</span>
+            {/* ── Действия ────────────────────────────────── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', marginTop: 10, gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                {hasReset && (
+                  <button type="button" onClick={clearAll}
+                    style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 12.5, cursor: 'pointer', padding: 0, textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+                    Очистить всё
+                  </button>
+                )}
+                {hasExtra && (
+                  <button type="button" onClick={() => setShowExtra(s => !s)}
+                    style={{ background: 'none', border: 'none', color: BLUE, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}>
+                    {showExtra ? 'Скрыть настройки' : 'Ещё настройки'}
+                    <span style={{ display: 'inline-block', transform: showExtra ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>▾</span>
+                  </button>
+                )}
+              </div>
 
-            {/* Найти */}
-            <button style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 6, height: 40, padding: '0 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
-              Найти
-            </button>
+              <div style={{ justifySelf: 'center' }}>{findBtn}</div>
 
-            {/* На карте */}
-            <Link href="/map" style={{ background: '#fff', color: BLUE, border: `1px solid ${BLUE}`, borderRadius: 6, height: 40, padding: '0 14px', fontSize: 14, fontWeight: 500, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              На карте
-            </Link>
+              <div />
+            </div>
 
-            {/* Сбросить */}
-            {hasReset && (
-              <button
-                onClick={() => up({
-                  listingType: 'sale', propertyType: 'apartment',
-                  city: 'tj', district: '', rooms: '',
-                  minPrice: '', maxPrice: '', rentPeriod: 'monthly',
-                  areaFrom: '', areaTo: '', landAreaFrom: '', landAreaTo: '',
-                  hasPhoto: false, fromOwner: false, newBuilding: false,
-                })}
-                style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 13, cursor: 'pointer', padding: '0 4px', textDecoration: 'underline', whiteSpace: 'nowrap' }}>
-                Сбросить
-              </button>
-            )}
           </div>
-
-          {/* ── Строка 2: чекбоксы ───────────────────── */}
-          <div style={{ display: 'flex', gap: 20, marginTop: 8, flexWrap: 'wrap' }}>
-            {chkItems.map(([k, l]) => (
-              <label key={String(k)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#374151', cursor: 'pointer', userSelect: 'none' }}>
-                <input
-                  type="checkbox"
-                  checked={!!f[k]}
-                  onChange={e => up({ [k]: e.target.checked } as Partial<SearchFilters>)}
-                  style={{ width: 15, height: 15, cursor: 'pointer' }}
-                />
-                {l}
-              </label>
-            ))}
-          </div>
-
         </div>
       </div>
 
       {/* Счётчик результатов */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 16px 0' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '12px 16px 0' }}>
         <span style={{ fontSize: 13, color: '#6b7280' }}>
           Найдено <b style={{ color: '#111827' }}>{resultCount}</b> объявлений
         </span>
       </div>
+
+      <style>{`
+        .ff-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px 16px;
+          align-items: end;
+        }
+        @media (max-width: 860px) {
+          .ff-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 540px) {
+          .ff-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
     </>
   );
 }
