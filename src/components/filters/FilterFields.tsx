@@ -109,7 +109,7 @@ export function SelectField({ options, value, onChange, width, fill }: {
     <select value={value} onChange={e => onChange(e.target.value)}
       style={fill
         ? { ...CTRL, width: '100%' }
-        : { ...CTRL, minWidth: width ?? 170, flex: `0 0 ${width ?? 170}px` }}>
+        : { ...CTRL, width: width ?? 170, minWidth: width ?? 170, flexShrink: 0, flexGrow: 0 }}>
       {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   );
@@ -172,11 +172,12 @@ export function RangeField({ from, to, unit, onFrom, onTo, fill }: {
   from: string; to: string; unit?: string; onFrom: (v: string) => void; onTo: (v: string) => void; fill?: boolean;
 }) {
   const inputStyle = fill ? { ...SMALL, width: '100%', flex: 1, minWidth: 0 } : SMALL;
+  const noNegative = (v: string) => v.replace('-', '');
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: fill ? undefined : 0, width: fill ? '100%' : undefined }}>
-      <input type="number" placeholder="От" value={from} onChange={e => onFrom(e.target.value)} style={inputStyle} />
+      <input type="number" min="0" placeholder="От" value={from} onChange={e => onFrom(noNegative(e.target.value))} style={inputStyle} />
       <span style={{ fontSize: 14, color: '#9ca3af', flexShrink: 0 }}>—</span>
-      <input type="number" placeholder="До" value={to} onChange={e => onTo(e.target.value)} style={inputStyle} />
+      <input type="number" min="0" placeholder="До" value={to} onChange={e => onTo(noNegative(e.target.value))} style={inputStyle} />
       {unit && <span style={{ fontSize: 13, color: '#6b7280', whiteSpace: 'nowrap', flexShrink: 0 }}>{unit}</span>}
     </div>
   );
@@ -191,7 +192,7 @@ export function TextField({ placeholder, value, onChange, width, fill }: {
     <input type="text" placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)}
       style={fill
         ? { ...CTRL, width: '100%' }
-        : { ...CTRL, minWidth: width ?? 180, flex: `0 0 ${width ?? 180}px` }} />
+        : { ...CTRL, width: width ?? 180, minWidth: width ?? 180, flexShrink: 0, flexGrow: 0 }} />
   );
 }
 

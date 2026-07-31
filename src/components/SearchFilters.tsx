@@ -88,12 +88,12 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', padding: '12px 14px' }}>
 
             {/* ── Базовая строка: режим + категория + поля вплотную ─────── */}
-            <div className="ff-row" style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="ff-row" style={{ display: 'flex', gap: 6, alignItems: 'flex-end', flexWrap: 'wrap' }}>
 
               <select value={f.mode} onChange={e => switchMode(e.target.value as FilterMode)}
                 style={{ ...CTRL, minWidth: 104, flex: '0 0 104px', fontWeight: 600, color: BLUE }}>
                 <option value="sale">Купить</option>
-                <option value="rent">Снять</option>
+                <option value="rent">Аренда</option>
               </select>
 
               <select value={f.category} onChange={e => { const next = tabs.find(t => t.key === e.target.value); if (next) switchCategory(next); }}
@@ -129,7 +129,7 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
                 </>
               )}
 
-              {findBtn}
+              {!showExtra && findBtn}
 
               <Link href="/map" style={{ background: '#fff', color: BLUE, border: `1px solid ${BLUE}`, borderRadius: 6, height: 40, padding: '0 14px', fontSize: 14, fontWeight: 500, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
                 На карте
@@ -194,7 +194,7 @@ export default function SmartFilter({ filters: f, onChange, resultCount }: Props
                 )}
               </div>
 
-              <div style={{ justifySelf: 'center' }}>{findBtn}</div>
+              <div style={{ justifySelf: 'center' }}>{showExtra && findBtn}</div>
 
               <div />
             </div>
