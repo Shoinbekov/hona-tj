@@ -56,20 +56,6 @@ export default function Navbar() {
           Хона.тж
         </Link>
 
-        {/* Center links */}
-        <nav style={{ display: 'flex', marginLeft: 8, flex: 1 }} className="hidden md:flex">
-          {[
-            { href: '/?lt=rent', label: 'Аренда' },
-            { href: '/?lt=sale', label: 'Продажа' },
-            { href: '/?pt=commercial', label: 'Коммерческая' },
-          ].map(({ href, label }) => (
-            <Link key={label} href={href}
-              style={{ color: '#fff', fontSize: 14, fontWeight: 500, padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', textDecoration: 'none', opacity: 0.9 }}>
-              {label}
-            </Link>
-          ))}
-        </nav>
-
         {/* Right */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 'auto' }} className="hidden md:flex">
 
@@ -147,12 +133,6 @@ export default function Navbar() {
       {/* Mobile menu */}
       {open && (
         <div className="md:hidden" style={{ background: '#1340c0', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '8px 16px 16px' }}>
-          {[{ href: '/?lt=rent', label: 'Аренда' }, { href: '/?lt=sale', label: 'Продажа' }, { href: '/?pt=commercial', label: 'Коммерческая' }].map(({ href, label }) => (
-            <Link key={label} href={href} onClick={() => setOpen(false)}
-              style={{ display: 'block', color: '#fff', fontSize: 15, padding: '11px 0', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              {label}
-            </Link>
-          ))}
           {user ? (
             <>
               <Link href="/dashboard" onClick={() => setOpen(false)}
