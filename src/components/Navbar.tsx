@@ -57,65 +57,70 @@ export default function Navbar() {
         </Link>
 
         {/* Right */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 'auto' }} className="hidden md:flex">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 'auto' }}>
 
-          {/* USD / TJS / RUB */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 0, color: '#fff', fontSize: 14 }}>
-            {(['USD', 'TJS', 'RUB'] as const).map((c, i) => (
-              <span key={c} style={{ display: 'flex', alignItems: 'center' }}>
-                {i > 0 && <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>|</span>}
-                <button onClick={() => setCurrency(c)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: currency === c ? 700 : 400, opacity: currency === c ? 1 : 0.55, padding: '2px 5px' }}>
-                  {c}
+          {/* Desktop-only: currency, language, auth */}
+          <div style={{ alignItems: 'center', gap: 16 }} className="hidden md:flex">
+
+            {/* USD / TJS / RUB */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0, color: '#fff', fontSize: 14 }}>
+              {(['USD', 'TJS', 'RUB'] as const).map((c, i) => (
+                <span key={c} style={{ display: 'flex', alignItems: 'center' }}>
+                  {i > 0 && <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>|</span>}
+                  <button onClick={() => setCurrency(c)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: currency === c ? 700 : 400, opacity: currency === c ? 1 : 0.55, padding: '2px 5px' }}>
+                    {c}
+                  </button>
+                </span>
+              ))}
+            </div>
+
+            <span style={{ color: '#fff', fontSize: 14, opacity: 0.8 }}>RU</span>
+
+            {/* Auth block */}
+            {user ? (
+              <div ref={dropRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setDropOpen(o => !o)}
+                  style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8, height: 34, padding: '0 10px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: '#fff' }}>
+                  {/* Avatar */}
+                  <span style={{ width: 26, height: 26, borderRadius: '50%', background: '#fff', color: BLUE, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {initial}
+                  </span>
+                  <span style={{ fontSize: 14, fontWeight: 500, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {displayName}
+                  </span>
+                  <ChevronDown size={14} style={{ flexShrink: 0, opacity: 0.7, transform: dropOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
                 </button>
-              </span>
-            ))}
+
+                {dropOpen && (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: '#fff', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', minWidth: 180, overflow: 'hidden', zIndex: 9999 }}>
+                    <Link href="/dashboard" onClick={() => setDropOpen(false)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', fontSize: 14, color: '#111827', textDecoration: 'none', fontWeight: 500 }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <LayoutDashboard size={15} color="#6b7280" />
+                      Мои объявления
+                    </Link>
+                    <div style={{ height: 1, background: '#e5e7eb' }} />
+                    <button onClick={handleSignOut}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', fontSize: 14, color: '#dc2626', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontWeight: 500 }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#fef2f2')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <LogOut size={15} />
+                      Выйти
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/login"
+                style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.55)', borderRadius: 6, padding: '0 14px', height: 34, fontSize: 14, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+                Войти
+              </Link>
+            )}
           </div>
 
-          <span style={{ color: '#fff', fontSize: 14, opacity: 0.8 }}>RU</span>
-
-          {/* Auth block */}
-          {user ? (
-            <div ref={dropRef} style={{ position: 'relative' }}>
-              <button
-                onClick={() => setDropOpen(o => !o)}
-                style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8, height: 34, padding: '0 10px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: '#fff' }}>
-                {/* Avatar */}
-                <span style={{ width: 26, height: 26, borderRadius: '50%', background: '#fff', color: BLUE, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {initial}
-                </span>
-                <span style={{ fontSize: 14, fontWeight: 500, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {displayName}
-                </span>
-                <ChevronDown size={14} style={{ flexShrink: 0, opacity: 0.7, transform: dropOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
-              </button>
-
-              {dropOpen && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: '#fff', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', minWidth: 180, overflow: 'hidden', zIndex: 9999 }}>
-                  <Link href="/dashboard" onClick={() => setDropOpen(false)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', fontSize: 14, color: '#111827', textDecoration: 'none', fontWeight: 500 }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <LayoutDashboard size={15} color="#6b7280" />
-                    Мои объявления
-                  </Link>
-                  <div style={{ height: 1, background: '#e5e7eb' }} />
-                  <button onClick={handleSignOut}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', fontSize: 14, color: '#dc2626', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontWeight: 500 }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#fef2f2')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <LogOut size={15} />
-                    Выйти
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Link href="/login"
-              style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.55)', borderRadius: 6, padding: '0 14px', height: 34, fontSize: 14, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              Войти
-            </Link>
-          )}
-
+          {/* Always visible: single add-listing CTA */}
           <button onClick={goToAddListing}
             style={{ background: GREEN, color: '#fff', border: 'none', borderRadius: 6, padding: '0 16px', height: 34, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
             + Подать объявление
@@ -124,7 +129,7 @@ export default function Navbar() {
 
         {/* Mobile burger */}
         <button className="md:hidden" onClick={() => setOpen(!open)}
-          style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 4 }}
+          style={{ marginLeft: 8, background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 4 }}
           aria-label="Меню">
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -150,8 +155,8 @@ export default function Navbar() {
               Войти
             </Link>
           )}
-          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#fff', fontSize: 14, marginRight: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#fff', fontSize: 14 }}>
               {(['USD', 'TJS', 'RUB'] as const).map((c, i) => (
                 <span key={c} style={{ display: 'flex', alignItems: 'center' }}>
                   {i > 0 && <span style={{ opacity: 0.4 }}>|</span>}
@@ -159,10 +164,7 @@ export default function Navbar() {
                 </span>
               ))}
             </div>
-            <button onClick={() => { setOpen(false); goToAddListing(); }}
-              style={{ flex: 1, background: GREEN, color: '#fff', border: 'none', borderRadius: 6, padding: '9px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              + Объявление
-            </button>
+            <span style={{ color: '#fff', fontSize: 14, opacity: 0.8 }}>RU</span>
           </div>
         </div>
       )}
