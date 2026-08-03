@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { FavoritesProvider } from '@/contexts/FavoritesContext';
 
 export const metadata: Metadata = {
   title: 'Хона.тж — Недвижимость в Таджикистане',
@@ -19,9 +20,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <AuthProvider>
-          <LanguageProvider>
-            {children}
-          </LanguageProvider>
+          <FavoritesProvider>
+            <LanguageProvider>
+              {children}
+            </LanguageProvider>
+          </FavoritesProvider>
         </AuthProvider>
       </body>
     </html>

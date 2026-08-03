@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase';
 import { createListing } from '@/lib/listings';
+import { clampNonNegative } from '@/lib/numberInput';
 import { Home, Building2, Briefcase, TreePine, Check, Phone, MessageCircle, MapPin, DollarSign, Camera, Lock } from 'lucide-react';
 
 const BLUE   = '#1a56db';
@@ -57,6 +58,7 @@ export default function AddListingPage() {
   const [submitError, setSubmitError] = useState('');
 
   const s = (k: keyof Form, v: string | string[]) => setForm(p => ({ ...p, [k]: v }));
+  const sNum = (k: keyof Form, v: string) => s(k, clampNonNegative(v));
   const toggleFeat = (f: string) => s('features', form.features.includes(f) ? form.features.filter(x => x !== f) : [...form.features, f]);
   const handlePhotos = (e: React.ChangeEvent<HTMLInputElement>) => setPhotos(Array.from(e.target.files ?? []).slice(0, 10));
 
@@ -267,12 +269,12 @@ export default function AddListingPage() {
                     <label style={lbl}>Цена (USD)</label>
                     <div style={{ position: 'relative' }}>
                       <DollarSign size={14} color="#9ca3af" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
-                      <input type="number" value={form.price} onChange={e => s('price', e.target.value)} placeholder="50 000" style={{ ...inp, paddingLeft: 28 }} />
+                      <input type="number" min="0" value={form.price} onChange={e => sNum('price', e.target.value)} placeholder="50 000" style={{ ...inp, paddingLeft: 28 }} />
                     </div>
                   </div>
                   <div>
                     <label style={lbl}>Площадь (м²)</label>
-                    <input type="number" value={form.area} onChange={e => s('area', e.target.value)} placeholder="65" style={inp} />
+                    <input type="number" min="0" value={form.area} onChange={e => sNum('area', e.target.value)} placeholder="65" style={inp} />
                   </div>
                 </div>
 
@@ -280,15 +282,15 @@ export default function AddListingPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
                     <div>
                       <label style={lbl}>Комнат</label>
-                      <input type="number" value={form.rooms} onChange={e => s('rooms', e.target.value)} placeholder="2" style={inp} />
+                      <input type="number" min="0" value={form.rooms} onChange={e => sNum('rooms', e.target.value)} placeholder="2" style={inp} />
                     </div>
                     <div>
                       <label style={lbl}>Этаж</label>
-                      <input type="number" value={form.floor} onChange={e => s('floor', e.target.value)} placeholder="5" style={inp} />
+                      <input type="number" min="0" value={form.floor} onChange={e => sNum('floor', e.target.value)} placeholder="5" style={inp} />
                     </div>
                     <div>
                       <label style={lbl}>Всего эт.</label>
-                      <input type="number" value={form.floors} onChange={e => s('floors', e.target.value)} placeholder="9" style={inp} />
+                      <input type="number" min="0" value={form.floors} onChange={e => sNum('floors', e.target.value)} placeholder="9" style={inp} />
                     </div>
                   </div>
                 )}

@@ -1,10 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
+import { isRealListingId } from '@/lib/favorites';
+import LoginPromptModal from './LoginPromptModal';
 import { formatPrice, getPriceInCurrency } from '@/lib/data';
 import { Property } from '@/types';
-import { MapPin, BedDouble, Maximize2, Layers, Phone, MessageCircle } from 'lucide-react';
+import { MapPin, BedDouble, Maximize2, Layers, Phone, MessageCircle, Heart } from 'lucide-react';
 
 const BLUE  = '#1a56db';
 const GREEN = '#16a34a';
@@ -12,14 +17,25 @@ const GREEN = '#16a34a';
 export default function PropertyCard({ property: p }: { property: Property }) {
   const { currency, rates } = useLanguage();
   const router = useRouter();
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   const price = formatPrice(getPriceInCurrency(p, currency, rates), currency);
   const isRent = p.listingType === 'rent';
+  const liked = isFavorite(p.id);
 
   const openWA = (e: React.MouseEvent) => {
     e.preventDefault();
     const msg = encodeURIComponent(`Здравствуйте! Меня интересует: ${p.title.ru}`);
     window.open(`https://wa.me/${p.whatsapp.replace(/\D/g, '')}?text=${msg}`, '_blank');
+  };
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) { setShowLoginPrompt(true); return; }
+    toggleFavorite(p.id);
   };
 
   return (
@@ -55,6 +71,16 @@ export default function PropertyCard({ property: p }: { property: Property }) {
             <span style={{ position: 'absolute', top: 10, right: 10, background: '#8b5cf6', color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 4 }}>
               НОВОЕ
             </span>
+          )}
+
+          {/* Favorite */}
+          {isRealListingId(p.id) && (
+            <button
+              onClick={handleFavoriteClick}
+              aria-label={liked ? 'Убрать из избранного' : 'В избранное'}
+              style={{ position: 'absolute', bottom: 10, right: 10, width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}>
+              <Heart size={16} color={liked ? '#ef4444' : '#6b7280'} fill={liked ? '#ef4444' : 'none'} />
+            </button>
           )}
         </div>
 
@@ -117,6 +143,7 @@ export default function PropertyCard({ property: p }: { property: Property }) {
           </div>
         </div>
       </div>
+      {showLoginPrompt && <LoginPromptModal onClose={() => setShowLoginPrompt(false)} />}
     </article>
   );
 }

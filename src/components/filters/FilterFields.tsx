@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { FieldDef, Option } from '@/lib/filterConfig';
+import { clampNonNegative } from '@/lib/numberInput';
 
 const BLUE   = '#1a56db';
 const BORDER = '#d1d5db';
@@ -172,12 +173,11 @@ export function RangeField({ from, to, unit, onFrom, onTo, fill }: {
   from: string; to: string; unit?: string; onFrom: (v: string) => void; onTo: (v: string) => void; fill?: boolean;
 }) {
   const inputStyle = fill ? { ...SMALL, width: '100%', flex: 1, minWidth: 0 } : SMALL;
-  const noNegative = (v: string) => v.replace('-', '');
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: fill ? undefined : 0, width: fill ? '100%' : undefined }}>
-      <input type="number" min="0" placeholder="От" value={from} onChange={e => onFrom(noNegative(e.target.value))} style={inputStyle} />
+      <input type="number" min="0" placeholder="От" value={from} onChange={e => onFrom(clampNonNegative(e.target.value))} style={inputStyle} />
       <span style={{ fontSize: 14, color: '#9ca3af', flexShrink: 0 }}>—</span>
-      <input type="number" min="0" placeholder="До" value={to} onChange={e => onTo(noNegative(e.target.value))} style={inputStyle} />
+      <input type="number" min="0" placeholder="До" value={to} onChange={e => onTo(clampNonNegative(e.target.value))} style={inputStyle} />
       {unit && <span style={{ fontSize: 13, color: '#6b7280', whiteSpace: 'nowrap', flexShrink: 0 }}>{unit}</span>}
     </div>
   );

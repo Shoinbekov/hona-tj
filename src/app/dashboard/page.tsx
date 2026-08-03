@@ -7,24 +7,35 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
 import { formatPrice, getPriceInCurrency } from '@/lib/data';
-import { fetchListingsByUser } from '@/lib/listings';
+import { fetchListingsByUser, fetchFavoriteListings } from '@/lib/listings';
+import { fetchProfile, updateProfile } from '@/lib/profile';
 import { Property } from '@/types';
-import { Eye, MessageCircle, Edit3, Trash2, ToggleLeft, ToggleRight, BarChart3, Bell, Settings, LogOut, Home, Star, TrendingUp } from 'lucide-react';
+import { Eye, MessageCircle, Edit3, Trash2, ToggleLeft, ToggleRight, BarChart3, Bell, Settings, LogOut, Home, Star, TrendingUp, Heart } from 'lucide-react';
 
 const BLUE  = '#1a56db';
 const GREEN = '#16a34a';
 
-type Tab = 'listings' | 'stats' | 'notifications' | 'settings';
+type Tab = 'listings' | 'favorites' | 'stats' | 'notifications' | 'settings';
 type DashboardItem = Property & { active: boolean; myViews: number; myInquiries: number };
 
 export default function DashboardPage() {
   const { currency, rates } = useLanguage();
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, updateEmail } = useAuth();
+  const { toggleFavorite } = useFavorites();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('listings');
   const [items, setItems] = useState<DashboardItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(true);
+  const [favItems, setFavItems] = useState<Property[]>([]);
+  const [favLoading, setFavLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
@@ -47,10 +58,60 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    setFavLoading(true);
+    fetchFavoriteListings(user.id)
+      .then(data => { if (!cancelled) setFavItems(data); })
+      .catch(err => {
+        console.error('[dashboard] Не удалось загрузить избранное:', err);
+        if (!cancelled) setFavItems([]);
+      })
+      .finally(() => { if (!cancelled) setFavLoading(false); });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) return;
+    setEmail(user.email ?? '');
+    let cancelled = false;
+    setProfileLoading(true);
+    fetchProfile(user.id)
+      .then(p => {
+        if (cancelled) return;
+        setFullName(p.fullName);
+        setPhone(p.phone);
+      })
+      .catch(err => console.error('[dashboard] Не удалось загрузить профиль:', err))
+      .finally(() => { if (!cancelled) setProfileLoading(false); });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
   if (loading || !user) return null;
 
   const toggle = (id: string) => setItems(p => p.map(l => l.id === id ? { ...l, active: !l.active } : l));
   const remove = (id: string) => { if (confirm('Удалить объявление?')) setItems(p => p.filter(l => l.id !== id)); };
+  const removeFavorite = (id: string) => { toggleFavorite(id); setFavItems(p => p.filter(l => l.id !== id)); };
+
+  async function handleSaveProfile() {
+    if (!user) return;
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      await updateProfile(user.id, { fullName, phone });
+      if (email !== (user.email ?? '')) {
+        const { error } = await updateEmail(email);
+        if (error) throw new Error(error);
+      }
+      setSaveMsg('Сохранено');
+    } catch (err) {
+      console.error('[dashboard] Не удалось сохранить профиль:', err);
+      setSaveMsg('Не удалось сохранить, попробуйте ещё раз');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const totalViews     = items.reduce((s, l) => s + l.myViews, 0);
   const totalInquiries = items.reduce((s, l) => s + l.myInquiries, 0);
@@ -65,8 +126,9 @@ export default function DashboardPage() {
 
   const SIDE: { id: Tab; icon: typeof Home; label: string; badge?: number }[] = [
     { id: 'listings',      icon: Home,      label: 'Мои объявления' },
+    { id: 'favorites',     icon: Heart,     label: 'Избранное' },
     { id: 'stats',         icon: BarChart3, label: 'Статистика' },
-    { id: 'notifications', icon: Bell,      label: 'Уведомления', badge: 3 },
+    { id: 'notifications', icon: Bell,      label: 'Уведомления' },
     { id: 'settings',      icon: Settings,  label: 'Настройки' },
   ];
 
@@ -201,6 +263,45 @@ export default function DashboardPage() {
               )
             )}
 
+            {/* FAVORITES */}
+            {tab === 'favorites' && (
+              favLoading ? (
+                <div style={{ background: '#fff', borderRadius: 8, padding: '60px 20px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', color: '#9ca3af', fontSize: 14 }}>
+                  Загрузка избранного…
+                </div>
+              ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {favItems.map(l => {
+                  const price = formatPrice(getPriceInCurrency(l, currency, rates), currency);
+                  return (
+                    <div key={l.id} style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: 14, display: 'flex', gap: 14 }}>
+                      <div style={{ width: 96, height: 72, borderRadius: 6, overflow: 'hidden', background: '#e5e7eb', flexShrink: 0 }}>
+                        <img src={l.images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 3 }}>{l.title.ru}</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: BLUE, marginBottom: 10 }}>
+                          {price}{l.listingType === 'rent' && <span style={{ fontSize: 12, fontWeight: 400, color: '#9ca3af' }}>/мес</span>}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <Link href={`/property/${l.id}`} style={actionBtn}><Eye size={12} />Смотреть</Link>
+                          <button onClick={() => removeFavorite(l.id)} style={{ ...actionBtnEl, borderColor: '#fecaca', color: '#ef4444' }}>
+                            <Heart size={12} fill="#ef4444" color="#ef4444" /> Убрать
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {favItems.length === 0 && (
+                  <div style={{ background: '#fff', borderRadius: 8, padding: '60px 20px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                    <p style={{ color: '#6b7280' }}>Вы пока ничего не добавили в избранное</p>
+                  </div>
+                )}
+              </div>
+              )
+            )}
+
             {/* STATS */}
             {tab === 'stats' && (
               <div style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: 24 }}>
@@ -227,24 +328,9 @@ export default function DashboardPage() {
 
             {/* NOTIFICATIONS */}
             {tab === 'notifications' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[
-                  { text: 'Ваше объявление просмотрели 12 раз сегодня', time: '2 ч. назад', bg: '#dbeafe', ic: BLUE },
-                  { text: 'Новый запрос по объявлению «3-комнатная квартира в центре»', time: '4 ч. назад', bg: '#dcfce7', ic: GREEN, dot: true },
-                  { text: 'Ваше объявление добавили в избранное', time: 'Вчера', bg: '#fef2f2', ic: '#ef4444' },
-                  { text: 'Клиент оставил отзыв — 5 звёзд', time: '2 дня назад', bg: '#fef3c7', ic: '#d97706' },
-                ].map((n, i) => (
-                  <div key={i} style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 8, background: n.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
-                      <Bell size={16} color={n.ic} />
-                      {n.dot && <span style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '2px solid #fff' }} />}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 13, color: '#374151' }}>{n.text}</div>
-                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{n.time}</div>
-                    </div>
-                  </div>
-                ))}
+              <div style={{ background: '#fff', borderRadius: 8, padding: '60px 20px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                <Bell size={32} color="#d1d5db" style={{ margin: '0 auto 12px' }} />
+                <p style={{ color: '#6b7280' }}>У вас пока нет уведомлений</p>
               </div>
             )}
 
@@ -252,15 +338,32 @@ export default function DashboardPage() {
             {tab === 'settings' && (
               <div style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: 24 }}>
                 <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 20 }}>Настройки профиля</h2>
+                {profileLoading ? (
+                  <p style={{ color: '#9ca3af', fontSize: 14 }}>Загрузка…</p>
+                ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 400 }}>
-                  {[{ label: 'Имя', val: 'Алишер Каримов', type: 'text' }, { label: 'Email', val: 'info@hona.tj', type: 'email' }, { label: 'Телефон', val: '+992 900 000 000', type: 'tel' }].map(({ label, val, type }) => (
-                    <div key={label}>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</label>
-                      <input type={type} defaultValue={val} style={{ width: '100%', height: 40, border: '1px solid #d1d5db', borderRadius: 6, padding: '0 12px', fontSize: 14, color: '#111827', outline: 'none' }} />
-                    </div>
-                  ))}
-                  <button style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 6, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}>Сохранить</button>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Имя</label>
+                    <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Ваше имя"
+                      style={{ width: '100%', height: 40, border: '1px solid #d1d5db', borderRadius: 6, padding: '0 12px', fontSize: 14, color: '#111827', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Email</label>
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com"
+                      style={{ width: '100%', height: 40, border: '1px solid #d1d5db', borderRadius: 6, padding: '0 12px', fontSize: 14, color: '#111827', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Телефон</label>
+                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+992 900 000 000"
+                      style={{ width: '100%', height: 40, border: '1px solid #d1d5db', borderRadius: 6, padding: '0 12px', fontSize: 14, color: '#111827', outline: 'none' }} />
+                  </div>
+                  <button onClick={handleSaveProfile} disabled={saving}
+                    style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: 6, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: saving ? 'default' : 'pointer', alignSelf: 'flex-start', opacity: saving ? 0.7 : 1 }}>
+                    {saving ? 'Сохранение…' : 'Сохранить'}
+                  </button>
+                  {saveMsg && <p style={{ fontSize: 13, color: saveMsg === 'Сохранено' ? '#16a34a' : '#dc2626', margin: 0 }}>{saveMsg}</p>}
                 </div>
+                )}
               </div>
             )}
           </div>

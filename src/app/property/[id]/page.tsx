@@ -4,7 +4,11 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import LoginPromptModal from '@/components/LoginPromptModal';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
+import { isRealListingId } from '@/lib/favorites';
 import { MOCK_PROPERTIES, formatPrice, getPriceInCurrency } from '@/lib/data';
 import { fetchListingById } from '@/lib/listings';
 import { Property } from '@/types';
@@ -19,8 +23,10 @@ const GREEN = '#16a34a';
 export default function PropertyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { currency, rates } = useLanguage();
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [imgIdx, setImgIdx] = useState(0);
-  const [liked, setLiked] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [dbProperty, setDbProperty] = useState<Property | null>(null);
   const [dbLoading, setDbLoading] = useState(false);
 
@@ -58,6 +64,12 @@ export default function PropertyPage({ params }: { params: Promise<{ id: string 
 
   const price  = formatPrice(getPriceInCurrency(p, currency, rates), currency);
   const isRent = p.listingType === 'rent';
+  const liked  = isFavorite(p.id);
+  const canFavorite = isRealListingId(p.id);
+  const handleLikeClick = () => {
+    if (!user) { setShowLoginPrompt(true); return; }
+    toggleFavorite(p.id);
+  };
   const prev   = () => setImgIdx(i => (i - 1 + p.images.length) % p.images.length);
   const next   = () => setImgIdx(i => (i + 1) % p.images.length);
   const openWA = () => {
@@ -180,10 +192,12 @@ export default function PropertyPage({ params }: { params: Promise<{ id: string 
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => setLiked(!liked)}
-                      style={{ width: 36, height: 36, border: '1px solid #e5e7eb', borderRadius: 6, background: liked ? '#fef2f2' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Heart size={16} color={liked ? '#ef4444' : '#9ca3af'} fill={liked ? '#ef4444' : 'none'} />
-                    </button>
+                    {canFavorite && (
+                      <button onClick={handleLikeClick}
+                        style={{ width: 36, height: 36, border: '1px solid #e5e7eb', borderRadius: 6, background: liked ? '#fef2f2' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Heart size={16} color={liked ? '#ef4444' : '#9ca3af'} fill={liked ? '#ef4444' : 'none'} />
+                      </button>
+                    )}
                     <button onClick={() => navigator.clipboard?.writeText(window.location.href)}
                       style={{ width: 36, height: 36, border: '1px solid #e5e7eb', borderRadius: 6, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Share2 size={16} color="#9ca3af" />
@@ -256,6 +270,8 @@ export default function PropertyPage({ params }: { params: Promise<{ id: string 
       </div>
 
       <Footer />
+
+      {showLoginPrompt && <LoginPromptModal onClose={() => setShowLoginPrompt(false)} />}
 
       <style>{`
         @media (max-width: 900px) {

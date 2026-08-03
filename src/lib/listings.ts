@@ -107,6 +107,21 @@ export async function fetchListingsByUser(userId: string): Promise<UserListing[]
   return data.map(row => ({ ...rowToProperty(row), isActive: row.is_active }));
 }
 
+// Listings the user has favorited, newest favorite first — used by the dashboard's
+// "Избранное" tab.
+export async function fetchFavoriteListings(userId: string): Promise<Property[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('favorites')
+    .select(`listing_id, created_at, listings(${LISTING_SELECT})`)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .returns<{ listing_id: string; created_at: string; listings: ListingRow | null }[]>();
+
+  if (error) throw error;
+  return data.filter(row => row.listings).map(row => rowToProperty(row.listings as ListingRow));
+}
+
 export async function fetchListingById(id: string): Promise<Property | null> {
   const supabase = createClient();
   const { data, error } = await supabase
