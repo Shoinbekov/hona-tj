@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase';
 import { createListing } from '@/lib/listings';
 import { clampNonNegative } from '@/lib/numberInput';
-import { geocodeAddress } from '@/lib/geocode';
+import { geocodeAddress, reverseGeocode } from '@/lib/geocode';
 import { Home, Building2, Briefcase, TreePine, Check, Phone, MessageCircle, MapPin, DollarSign, Camera, Lock } from 'lucide-react';
 
 // ssr:false is required — Leaflet accesses `window` and cannot run on the server
@@ -25,6 +25,10 @@ const AddressMapPicker = dynamic(() => import('@/components/AddressMapPicker'), 
 // Nominatim's usage policy caps requests at 1/sec, so we only geocode after the user
 // has stopped typing for a bit — comfortably above that limit even with fast typists.
 const GEOCODE_DEBOUNCE_MS = 900;
+
+// Same rate-limit reasoning, but for map clicks: a user refining their pin position
+// with several quick clicks should only fire one reverse-geocode lookup, not one per click.
+const REVERSE_GEOCODE_DEBOUNCE_MS = 600;
 
 const BLUE   = '#1a56db';
 const GREEN  = '#16a34a';
@@ -76,6 +80,17 @@ export default function AddListingPage() {
   const [geocoding, setGeocoding] = useState(false);
   const [geocodeStatus, setGeocodeStatus] = useState<'idle' | 'found' | 'notfound'>('idle');
   const [flyToSignal, setFlyToSignal] = useState(0);
+  const [reverseGeocoding, setReverseGeocoding] = useState(false);
+
+  // Reverse-geocode's own debounce timer/abort-controller — independent of the forward
+  // geocode effect below, since map clicks and address typing happen on different clocks.
+  const reverseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reverseControllerRef = useRef<AbortController | null>(null);
+  // Set right before a reverse-geocoded address is written into the form, so the forward
+  // geocode effect (which watches form.address) skips the one run it would otherwise fire
+  // in response — without this, clicking the map would loop straight back into a forward
+  // geocode lookup for the address we just derived from that exact point.
+  const skipForwardGeocodeRef = useRef(false);
 
   const s = (k: keyof Form, v: string | string[]) => setForm(p => ({ ...p, [k]: v }));
   const sNum = (k: keyof Form, v: string) => s(k, clampNonNegative(v));
@@ -84,12 +99,45 @@ export default function AddListingPage() {
 
   // Manual pin placement always wins — it doesn't fly the map (the user is already
   // looking at the point they clicked) and it's what gets submitted from here on,
-  // even if the address text keeps changing afterwards.
-  const handleMapPick = (lat: number, lng: number) => setForm(p => ({ ...p, lat, lng }));
+  // even if the address text keeps changing afterwards. It also looks up a human-readable
+  // address for that exact point and fills the Адрес field with it (debounced, so a burst
+  // of clicks while fine-tuning the pin only fires one lookup).
+  const handleMapPick = (lat: number, lng: number) => {
+    setForm(p => ({ ...p, lat, lng }));
+
+    if (reverseTimerRef.current) clearTimeout(reverseTimerRef.current);
+    reverseControllerRef.current?.abort();
+
+    const controller = new AbortController();
+    reverseControllerRef.current = controller;
+    reverseTimerRef.current = setTimeout(() => {
+      setReverseGeocoding(true);
+      reverseGeocode(lat, lng, controller.signal)
+        .then(address => {
+          // No result (empty land, city outskirts, etc.) — leave whatever the user
+          // already typed alone; only the marker moves.
+          if (address) {
+            skipForwardGeocodeRef.current = true;
+            setForm(p => ({ ...p, address }));
+          }
+        })
+        .catch(err => { if (err?.name !== 'AbortError') console.error('[add-listing] reverse geocode failed:', err); })
+        .finally(() => setReverseGeocoding(false));
+    }, REVERSE_GEOCODE_DEBOUNCE_MS);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (reverseTimerRef.current) clearTimeout(reverseTimerRef.current);
+      reverseControllerRef.current?.abort();
+    };
+  }, []);
 
   // Auto-geocode the address (+ district) after the user stops typing. This only ever
   // proposes a point — a manual map click always overrides it via handleMapPick above.
   useEffect(() => {
+    if (skipForwardGeocodeRef.current) { skipForwardGeocodeRef.current = false; return; }
+
     const address = form.address.trim();
     if (!address) return;
 
@@ -317,8 +365,9 @@ export default function AddListingPage() {
                     <MapPin size={14} color="#9ca3af" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
                     <input type="text" value={form.address} onChange={e => s('address', e.target.value)} placeholder="Проспект Рудаки 42" style={{ ...inp, paddingLeft: 32 }} />
                   </div>
-                  <div style={{ fontSize: 12, marginTop: 6, color: geocoding ? '#9ca3af' : geocodeStatus === 'found' ? '#16a34a' : geocodeStatus === 'notfound' ? '#dc2626' : '#9ca3af' }}>
-                    {geocoding ? 'Определяем координаты…'
+                  <div style={{ fontSize: 12, marginTop: 6, color: reverseGeocoding || geocoding ? '#9ca3af' : geocodeStatus === 'found' ? '#16a34a' : geocodeStatus === 'notfound' ? '#dc2626' : '#9ca3af' }}>
+                    {reverseGeocoding ? 'Определяем адрес по точке на карте…'
+                      : geocoding ? 'Определяем координаты…'
                       : geocodeStatus === 'found' ? 'Координаты найдены по адресу — при необходимости уточните точку кликом на карте.'
                       : geocodeStatus === 'notfound' ? 'Не удалось найти адрес автоматически — отметьте точку на карте вручную.'
                       : 'Кликните на карте, чтобы отметить точное расположение.'}
