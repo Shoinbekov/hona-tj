@@ -9,6 +9,8 @@ import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MOCK_PROPERTIES, formatPrice, getPriceInCurrency } from '@/lib/data';
+import { fetchActiveListings } from '@/lib/listings';
+import { Property } from '@/types';
 import LocationPicker from '@/components/LocationPicker';
 
 const BLUE   = '#1a56db';
@@ -90,8 +92,10 @@ function FlyToFilter({ city, district }: { city: string; district: string }) {
   return null;
 }
 
-// All properties that have coordinates
-const WITH_COORDS = MOCK_PROPERTIES.filter(p => p.lat != null && p.lng != null);
+// Top up with the seeded mock listings while the database is still sparse, so the map
+// never looks empty/broken before enough real listings have been posted — same
+// threshold/fallback pattern as the homepage (src/app/page.tsx).
+const MIN_LISTINGS = 3;
 
 const CTRL: React.CSSProperties = {
   height: 36, border: `1px solid ${BORDER}`, borderRadius: 6,
@@ -130,6 +134,18 @@ export default function MapView() {
   const [filters, setFilters] = useState<Filters>({ listingType: 'sale', propertyType: 'apartment', city: 'tj', district: '' });
   const up = (patch: Partial<Filters>) => setFilters(f => ({ ...f, ...patch }));
 
+  const [properties, setProperties] = useState<Property[]>(MOCK_PROPERTIES);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchActiveListings()
+      .then(data => { if (!cancelled) setProperties(data.length < MIN_LISTINGS ? [...data, ...MOCK_PROPERTIES] : data); })
+      .catch(() => { if (!cancelled) setProperties(MOCK_PROPERTIES); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const withCoords = useMemo(() => properties.filter(p => p.lat != null && p.lng != null), [properties]);
+
   const mapRef = useRef<LeafletMap | null>(null);
   const didSetInitialView = useRef(false);
 
@@ -164,13 +180,13 @@ export default function MapView() {
     up({ listingType: val, propertyType: keep ? filters.propertyType : subs[0].v });
   }
 
-  const visible = useMemo(() => WITH_COORDS.filter(p => {
+  const visible = useMemo(() => withCoords.filter(p => {
     if (p.listingType !== filters.listingType) return false;
     if (p.type !== filters.propertyType) return false;
     if (filters.city && filters.city !== 'tj' && p.city !== filters.city) return false;
     if (filters.district && p.district !== filters.district) return false;
     return true;
-  }), [filters]);
+  }), [withCoords, filters]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

@@ -148,6 +148,8 @@ export interface NewListingInput {
   area: number | null;
   floor: number | null;
   totalFloors: number | null;
+  lat: number | null;
+  lng: number | null;
   photos: File[];
 }
 
@@ -171,6 +173,8 @@ export async function createListing(input: NewListingInput): Promise<string> {
       area: input.area,
       floor: input.floor,
       total_floors: input.totalFloors,
+      lat: input.lat,
+      lng: input.lng,
     })
     .select('id')
     .single();

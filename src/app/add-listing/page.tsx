@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -8,7 +9,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase';
 import { createListing } from '@/lib/listings';
 import { clampNonNegative } from '@/lib/numberInput';
+import { geocodeAddress } from '@/lib/geocode';
 import { Home, Building2, Briefcase, TreePine, Check, Phone, MessageCircle, MapPin, DollarSign, Camera, Lock } from 'lucide-react';
+
+// ssr:false is required — Leaflet accesses `window` and cannot run on the server
+const AddressMapPicker = dynamic(() => import('@/components/AddressMapPicker'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ height: 220, borderRadius: 8, border: '1px solid #d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 13 }}>
+      Загрузка карты…
+    </div>
+  ),
+});
+
+// Nominatim's usage policy caps requests at 1/sec, so we only geocode after the user
+// has stopped typing for a bit — comfortably above that limit even with fast typists.
+const GEOCODE_DEBOUNCE_MS = 900;
 
 const BLUE   = '#1a56db';
 const GREEN  = '#16a34a';
@@ -29,9 +45,10 @@ type Form = {
   type: string; deal: string; district: string; address: string;
   price: string; area: string; rooms: string; floor: string; floors: string;
   title: string; desc: string; phone: string; wa: string; features: string[];
+  lat: number | null; lng: number | null;
 };
 
-const INIT: Form = { type:'apartment', deal:'sale', district:'', address:'', price:'', area:'', rooms:'', floor:'', floors:'', title:'', desc:'', phone:'', wa:'', features:[] };
+const INIT: Form = { type:'apartment', deal:'sale', district:'', address:'', price:'', area:'', rooms:'', floor:'', floors:'', title:'', desc:'', phone:'', wa:'', features:[], lat: null, lng: null };
 
 // Supabase/PostgREST errors carry the real cause in message/details/hint — surface all of it
 // instead of a generic message, so a NOT NULL/FK/RLS violation is actually diagnosable.
@@ -56,11 +73,46 @@ export default function AddListingPage() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeStatus, setGeocodeStatus] = useState<'idle' | 'found' | 'notfound'>('idle');
+  const [flyToSignal, setFlyToSignal] = useState(0);
 
   const s = (k: keyof Form, v: string | string[]) => setForm(p => ({ ...p, [k]: v }));
   const sNum = (k: keyof Form, v: string) => s(k, clampNonNegative(v));
   const toggleFeat = (f: string) => s('features', form.features.includes(f) ? form.features.filter(x => x !== f) : [...form.features, f]);
   const handlePhotos = (e: React.ChangeEvent<HTMLInputElement>) => setPhotos(Array.from(e.target.files ?? []).slice(0, 10));
+
+  // Manual pin placement always wins — it doesn't fly the map (the user is already
+  // looking at the point they clicked) and it's what gets submitted from here on,
+  // even if the address text keeps changing afterwards.
+  const handleMapPick = (lat: number, lng: number) => setForm(p => ({ ...p, lat, lng }));
+
+  // Auto-geocode the address (+ district) after the user stops typing. This only ever
+  // proposes a point — a manual map click always overrides it via handleMapPick above.
+  useEffect(() => {
+    const address = form.address.trim();
+    if (!address) return;
+
+    const query = form.district ? `${form.district}, ${address}` : address;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      setGeocoding(true);
+      geocodeAddress(query, controller.signal)
+        .then(result => {
+          if (result) {
+            setForm(p => ({ ...p, lat: result.lat, lng: result.lng }));
+            setFlyToSignal(v => v + 1);
+            setGeocodeStatus('found');
+          } else {
+            setGeocodeStatus('notfound');
+          }
+        })
+        .catch(err => { if (err?.name !== 'AbortError') console.error('[add-listing] geocode failed:', err); })
+        .finally(() => setGeocoding(false));
+    }, GEOCODE_DEBOUNCE_MS);
+
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [form.address, form.district]);
 
   // Required by the `listings` schema (NOT NULL / CHECK constraints) — catching these here
   // gives a clear message instead of an opaque constraint-violation error from Postgres.
@@ -71,6 +123,7 @@ export default function AddListingPage() {
     if (!form.price.trim() || Number.isNaN(price) || price <= 0) return 'Укажите цену объявления — больше нуля.';
     if (form.deal !== 'sale' && form.deal !== 'rent') return 'Выберите тип сделки.';
     if (!TYPES.some(t => t.val === form.type)) return 'Выберите тип недвижимости.';
+    if (form.lat == null || form.lng == null) return 'Укажите местоположение на карте (шаг «Адрес и цена») — введите адрес или кликните по карте.';
     return null;
   }
 
@@ -116,6 +169,8 @@ export default function AddListingPage() {
         area: form.area ? parseFloat(form.area) : null,
         floor: form.floor ? parseInt(form.floor, 10) : null,
         totalFloors: form.floors ? parseInt(form.floors, 10) : null,
+        lat: form.lat,
+        lng: form.lng,
         photos,
       });
       setDone(true);
@@ -262,6 +317,16 @@ export default function AddListingPage() {
                     <MapPin size={14} color="#9ca3af" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
                     <input type="text" value={form.address} onChange={e => s('address', e.target.value)} placeholder="Проспект Рудаки 42" style={{ ...inp, paddingLeft: 32 }} />
                   </div>
+                  <div style={{ fontSize: 12, marginTop: 6, color: geocoding ? '#9ca3af' : geocodeStatus === 'found' ? '#16a34a' : geocodeStatus === 'notfound' ? '#dc2626' : '#9ca3af' }}>
+                    {geocoding ? 'Определяем координаты…'
+                      : geocodeStatus === 'found' ? 'Координаты найдены по адресу — при необходимости уточните точку кликом на карте.'
+                      : geocodeStatus === 'notfound' ? 'Не удалось найти адрес автоматически — отметьте точку на карте вручную.'
+                      : 'Кликните на карте, чтобы отметить точное расположение.'}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <AddressMapPicker lat={form.lat} lng={form.lng} onChange={handleMapPick} flyToSignal={flyToSignal} />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
