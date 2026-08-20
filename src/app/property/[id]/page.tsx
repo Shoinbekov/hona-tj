@@ -14,7 +14,7 @@ import { fetchListingById } from '@/lib/listings';
 import { Property } from '@/types';
 import {
   ArrowLeft, MapPin, BedDouble, Maximize2, Layers, Eye, Phone,
-  MessageCircle, Heart, Share2, Check, ChevronLeft, ChevronRight, Calendar, Star,
+  MessageCircle, Heart, Share2, Check, ChevronLeft, ChevronRight, Calendar,
 } from 'lucide-react';
 
 const BLUE  = '#1a56db';
@@ -223,13 +223,7 @@ export default function PropertyPage({ params }: { params: Promise<{ id: string 
                   <div style={{ width: 42, height: 42, borderRadius: '50%', background: BLUE, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
                     {p.agentName[0]}
                   </div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{p.agentName}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginTop: 2 }}>
-                      {[1,2,3,4,5].map(s => <Star key={s} size={11} color="#f59e0b" fill={s <= 4 ? '#f59e0b' : 'none'} />)}
-                      <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>4.8 · 23 сделки</span>
-                    </div>
-                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{p.agentName}</div>
                 </div>
 
                 {/* Buttons */}
